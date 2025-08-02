@@ -3,6 +3,7 @@ FROM node:18 AS frontend
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
+RUN npm install -g vite
 COPY frontend ./
 RUN npm run build
 
