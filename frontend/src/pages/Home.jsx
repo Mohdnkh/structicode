@@ -1,25 +1,58 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Lightbulb, Ruler, Globe2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function Home() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
 
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'ar' ? 'en' : 'ar'
+    i18n.changeLanguage(newLang)
+    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr'
+  }
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(to bottom, #f8fafc, #e2e8f0)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '2rem',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
+  <div
+    style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #f8fafc, #e2e8f0)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      padding: '2rem',
+      position: 'relative',
+      overflow: 'hidden',
+    }}
+  >
+    
+
+    {/* زر تغيير اللغة */}
+    <button
+  onClick={toggleLanguage}
+  style={{
+    position: 'absolute',
+    top: '1rem',
+    right: '1rem',
+    background: '#ffffff',
+    border: '1px solid #ccc',
+    padding: '6px 16px',
+    borderRadius: '8px',
+    fontWeight: '600',
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    zIndex: 999,
+    color: '#111',
+  }}
+>
+  {i18n.language === 'ar' ? 'EN' : 'AR'}
+</button>
+
+
+
       {/* الخلفية المصممة */}
       <motion.div
         style={{
@@ -42,8 +75,8 @@ export default function Home() {
       {/* المحتوى الرئيسي */}
       <div style={{ position: 'relative', zIndex: 10, maxWidth: '800px', width: '100%' }}>
         <motion.img
-          src="/logo.png"
-          alt="Civil Code Logo"
+          src="/logo-structicode.png"
+          alt="Structicode Logo"
           style={{
             width: '80px',
             height: '80px',
@@ -66,7 +99,7 @@ export default function Home() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          World Civil Engineering <span style={{ color: '#2563eb' }}>Code Platform</span>
+          {t('home.title')}
         </motion.h1>
 
         <motion.p
@@ -82,7 +115,7 @@ export default function Home() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          Perform smart, fast and code-compliant structural element analysis based on global building standards.
+          {t('home.subtitle')}
         </motion.p>
 
         <motion.div
@@ -104,7 +137,7 @@ export default function Home() {
               cursor: 'pointer',
             }}
           >
-            Start Analysis
+            {t('home.start')}
           </button>
         </motion.div>
       </div>

@@ -8,11 +8,5 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-  },
-  server: {
-    proxy: {
-      '/analyze': 'http://localhost:8000',
-      '/generate-pdf': 'http://localhost:8000'
-    }
   }
 })

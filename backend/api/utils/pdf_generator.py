@@ -27,9 +27,25 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.add_page()
     pdf.set_text_color(0, 0, 0)
 
+    # تعريف الرموز المستخدمة
+    symbol_descriptions = {
+        "As (mm²)": "Steel Area",
+        "Mn (kN·m)": "Nominal Moment Capacity",
+        "Mu (kN·m)": "Applied Moment",
+        "fc (MPa)": "Concrete Strength",
+        "fy (MPa)": "Steel Yield Strength",
+        "Pn (kN)": "Axial Capacity",
+        "Pu (kN)": "Applied Axial Load",
+        "Ag (cm²)": "Gross Area",
+        "phi": "Strength Reduction Factor",
+        "As_required (mm²/m)": "Required Steel Area",
+        "As_bottom_provided (mm²/m)": "Provided Bottom Steel",
+        "As_top_provided (mm²/m)": "Provided Top Steel"
+    }
+
     # Section 1: Project Info
-    pdf.set_font("DejaVu", "", 12)
     pdf.set_fill_color(230, 230, 250)
+    pdf.set_font("DejaVu", "", 12)
     pdf.cell(0, 10, "1. Project Information", ln=True, fill=True)
     pdf.set_font("DejaVu", size=11)
     pdf.cell(0, 8, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
@@ -39,31 +55,39 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.ln(6)
 
     # Section 2: Input Parameters
-    pdf.set_font("DejaVu", "", 12)
     pdf.set_fill_color(220, 245, 245)
+    pdf.set_font("DejaVu", "", 12)
     pdf.cell(0, 10, "2. Input Parameters", ln=True, fill=True)
     pdf.set_font("DejaVu", size=11)
     input_data = data.get("data") or data
     for key, value in input_data.items():
         if isinstance(value, dict):
             pdf.set_font("DejaVu", "", 11)
-            pdf.cell(0, 8, f"{key}:", ln=True)
+            pdf.cell(0, 8, f"{key.capitalize()}:", ln=True)
             pdf.set_font("DejaVu", size=11)
             for subkey, subval in value.items():
-                pdf.cell(0, 8, f"   - {subkey}: {subval}", ln=True)
+                desc = symbol_descriptions.get(subkey, "")
+                line = f"   - {subkey}: {subval}"
+                if desc:
+                    line += f" → {desc}"
+                pdf.cell(0, 8, line, ln=True)
         else:
-            pdf.cell(0, 8, f"{key}: {value}", ln=True)
+            desc = symbol_descriptions.get(key, "")
+            line = f"{key}: {value}"
+            if desc:
+                line += f" → {desc}"
+            pdf.cell(0, 8, line, ln=True)
     pdf.ln(4)
 
     # Section 3: Seismic
     seismic = result.get("result", {}).get("seismic")
     if seismic:
-        pdf.set_font("DejaVu", "", 12)
         pdf.set_fill_color(245, 230, 230)
+        pdf.set_font("DejaVu", "", 12)
         pdf.cell(0, 10, "3. Seismic Analysis", ln=True, fill=True)
         pdf.set_font("DejaVu", size=11)
         for key, value in seismic.items():
-            pdf.multi_cell(0, 8, f"{key}: {value}")
+            pdf.cell(0, 8, f"{key}: {value}", ln=True)
         pdf.set_text_color(120, 120, 120)
         pdf.set_font("DejaVu", "", 10)
         pdf.multi_cell(0, 8, "Note: This is a preliminary seismic assessment based on zone, soil type, and system type. It is not a replacement for full dynamic analysis.")
@@ -72,29 +96,41 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
 
     # Section 4: Structural
     structural = result.get("result", {}).get("structural", {})
-    pdf.set_font("DejaVu", "", 12)
     pdf.set_fill_color(220, 235, 220)
+    pdf.set_font("DejaVu", "", 12)
     pdf.cell(0, 10, "4. Structural Analysis", ln=True, fill=True)
     pdf.set_font("DejaVu", size=11)
     for key, value in structural.items():
-        if key not in ["details", "recommendations"]:
-            pdf.cell(0, 8, f"{key}: {value}", ln=True)
+        if key in ["details", "recommendations"]:
+            continue
+        if isinstance(value, dict):
+            pdf.cell(0, 8, f"{key.capitalize()}:", ln=True)
+            for subkey, subval in value.items():
+                desc = symbol_descriptions.get(subkey, "")
+                line = f"   - {subkey}: {subval}"
+                if desc:
+                    line += f" → {desc}"
+                pdf.cell(0, 8, line, ln=True)
+        else:
+            desc = symbol_descriptions.get(key, "")
+            line = f"{key}: {value}"
+            if desc:
+                line += f" → {desc}"
+            pdf.cell(0, 8, line, ln=True)
 
     # Details
     if "details" in structural:
         pdf.set_font("DejaVu", "", 11)
         pdf.cell(0, 8, "Details:", ln=True)
-        pdf.set_font("DejaVu", size=11)
         for key, val in structural["details"].items():
             pdf.multi_cell(0, 8, f"{key}: {val}")
         pdf.ln(2)
 
     # Recommendations
     if structural.get("recommendations"):
-        pdf.set_font("DejaVu", "", 11)
         pdf.set_fill_color(255, 255, 204)
+        pdf.set_font("DejaVu", "", 11)
         pdf.cell(0, 8, "Recommendations:", ln=True, fill=True)
-        pdf.set_font("DejaVu", size=11)
         for rec in structural["recommendations"]:
             pdf.set_text_color(80, 80, 80)
             pdf.multi_cell(0, 8, f"- {rec}")
