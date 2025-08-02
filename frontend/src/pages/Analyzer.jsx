@@ -61,7 +61,7 @@ export default function Analyzer() {
     }
 
     try {
-      const response = await fetch('https://your-backend.onrender.com/analyze', {
+      const response = await fetch('https://structicode-api.onrender.com/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -78,7 +78,7 @@ export default function Analyzer() {
   const downloadPDF = async () => {
     if (!lastInput || !result) return
     try {
-      const res = await fetch('https://your-backend.onrender.com/generate-pdf', {
+      const res = await fetch('hhttps://structicode-api.onrender.com/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { ...lastInput, code, element }, result })
