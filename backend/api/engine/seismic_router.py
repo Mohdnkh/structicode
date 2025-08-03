@@ -1,5 +1,4 @@
-
-from api.codes_seismic import (
+from ..codes_seismic import (
     JordanSeismic,
     SaudiSeismic,
     EgyptSeismic,
