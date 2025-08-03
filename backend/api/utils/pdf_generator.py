@@ -4,7 +4,7 @@ import os
 
 class PDFReport(FPDF):
     def header(self):
-        self.set_font("Helvetica", "B", 16)
+        self.set_font("Helvetica", "", 16)
         self.set_text_color(0, 51, 102)
         self.cell(0, 10, "Structural Analysis Report", ln=True, align="C")
         self.set_font("Helvetica", "", 10)
@@ -40,7 +40,7 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     }
 
     pdf.set_fill_color(230, 230, 250)
-    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_font("Helvetica", "", 12)
     pdf.cell(0, 10, "1. Project Information", ln=True, fill=True)
     pdf.set_font("Helvetica", size=11)
     pdf.cell(0, 8, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
@@ -50,15 +50,13 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.ln(6)
 
     pdf.set_fill_color(220, 245, 245)
-    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_font("Helvetica", "", 12)
     pdf.cell(0, 10, "2. Input Parameters", ln=True, fill=True)
     pdf.set_font("Helvetica", size=11)
     input_data = data.get("data") or data
     for key, value in input_data.items():
         if isinstance(value, dict):
-            pdf.set_font("Helvetica", "B", 11)
             pdf.cell(0, 8, f"{key.capitalize()}:", ln=True)
-            pdf.set_font("Helvetica", size=11)
             for subkey, subval in value.items():
                 desc = symbol_descriptions.get(subkey, "")
                 line = f"   - {subkey}: {subval}"
@@ -76,20 +74,20 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     seismic = result.get("result", {}).get("seismic")
     if seismic:
         pdf.set_fill_color(245, 230, 230)
-        pdf.set_font("Helvetica", "B", 12)
+        pdf.set_font("Helvetica", "", 12)
         pdf.cell(0, 10, "3. Seismic Analysis", ln=True, fill=True)
         pdf.set_font("Helvetica", size=11)
         for key, value in seismic.items():
             pdf.cell(0, 8, f"{key}: {value}", ln=True)
         pdf.set_text_color(120, 120, 120)
-        pdf.set_font("Helvetica", size=10)
-        pdf.multi_cell(0, 8, "Note: This is a preliminary seismic assessment based on zone, soil type, and system type. It is not a replacement for full dynamic analysis.")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.multi_cell(0, 8, "Note: This is a preliminary seismic assessment based on zone, soil type, and system type.")
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
     structural = result.get("result", {}).get("structural", {})
     pdf.set_fill_color(220, 235, 220)
-    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_font("Helvetica", "", 12)
     pdf.cell(0, 10, "4. Structural Analysis", ln=True, fill=True)
     pdf.set_font("Helvetica", size=11)
     for key, value in structural.items():
@@ -111,18 +109,14 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
             pdf.cell(0, 8, line, ln=True)
 
     if "details" in structural:
-        pdf.set_font("Helvetica", "B", 11)
         pdf.cell(0, 8, "Details:", ln=True)
-        pdf.set_font("Helvetica", size=11)
         for key, val in structural["details"].items():
             pdf.multi_cell(0, 8, f"{key}: {val}")
         pdf.ln(2)
 
     if structural.get("recommendations"):
         pdf.set_fill_color(255, 255, 204)
-        pdf.set_font("Helvetica", "B", 11)
         pdf.cell(0, 8, "Recommendations:", ln=True, fill=True)
-        pdf.set_font("Helvetica", size=11)
         for rec in structural["recommendations"]:
             pdf.set_text_color(80, 80, 80)
             pdf.multi_cell(0, 8, f"- {rec}")
@@ -131,6 +125,5 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     output_dir = os.path.abspath("reports")
     os.makedirs(output_dir, exist_ok=True)
     full_path = os.path.join(output_dir, filename)
-
     pdf.output(full_path)
     return full_path
