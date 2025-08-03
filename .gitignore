@@ -1,0 +1,15 @@
+# ملفات ما بدنا نرفعها على GitHub
+
+# مجلدات ضخمة مؤقتة
+node_modules/
+__pycache__/
+*.pyc
+
+# ملفات بيئية
+frontend/.env
+
+# ملفات النظام
+.DS_Store
+
+# مجلدات الإخراج
+reports/
