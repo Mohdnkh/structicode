@@ -1,12 +1,12 @@
-from backend.api.engine.concrete.beam import analyze_concrete_beam
-from backend.api.engine.concrete.column import analyze_concrete_column
-from api.engine.concrete.slab_solid import analyze_solid_slab
-from api.engine.concrete.slab_hollow import analyze_hollow_slab
-from api.engine.concrete.slab_waffle import analyze_waffle_slab
-from backend.api.engine.concrete.footing import analyze_concrete_footing
-from backend.api.engine.concrete.staircase import analyze_concrete_staircase
-from backend.api.engine.steel.steel_beam import analyze_steel_beam
-from backend.api.engine.steel.steel_column import analyze_steel_column
+from ..engine.concrete.beam import analyze_concrete_beam
+from ..engine.concrete.column import analyze_concrete_column
+from ..engine.concrete.slab_solid import analyze_solid_slab
+from ..engine.concrete.slab_hollow import analyze_hollow_slab
+from ..engine.concrete.slab_waffle import analyze_waffle_slab
+from ..engine.concrete.footing import analyze_concrete_footing
+from ..engine.concrete.staircase import analyze_concrete_staircase
+from ..engine.steel.steel_beam import analyze_steel_beam
+from ..engine.steel.steel_column import analyze_steel_column
 
 class Eurocode:
     """

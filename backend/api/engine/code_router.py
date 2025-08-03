@@ -1,19 +1,15 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
-
-from api.codes.aci import ACI
-from api.codes.bs import BS
-from api.codes.eurocode import Eurocode
-from api.codes.as_code import ASCode
-from api.codes.csa import CSA
-from api.codes.is_code import ISCode
-from api.codes.jordan import JordanCode
-from api.codes.egypt import EgyptianCode
-from api.codes.saudi import SaudiCode
-from api.codes.uae import UAECode
-from api.codes.turkey import TurkishCode
-from api.codes.steel import SteelCode  # ✅ الكود الجديد اللي أضفناه
+from ..codes.aci import ACI
+from ..codes.bs import BS
+from ..codes.eurocode import Eurocode
+from ..codes.as_code import ASCode
+from ..codes.csa import CSA
+from ..codes.is_code import ISCode
+from ..codes.jordan import JordanCode
+from ..codes.egypt import EgyptianCode
+from ..codes.saudi import SaudiCode
+from ..codes.uae import UAECode
+from ..codes.turkey import TurkishCode
+from ..codes.steel import SteelCode  # ✅ الكود الجديد اللي أضفناه
 
 def get_code_handler(code_name: str):
     mapping = {
