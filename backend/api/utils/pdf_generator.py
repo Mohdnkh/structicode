@@ -12,7 +12,7 @@ def generate_pdf(data, result, filename="simple_report.pdf"):
     # ✅ استخدم خط داخلي فقط (بدون DejaVu أو ملفات .ttf)
     pdf.set_font("Arial", size=12)
     pdf.add_page()
-    pdf.cell(0, 10, "✅ This is a basic PDF without external fonts.", ln=True)
+    pdf.cell(0, 10, "This is a basic PDF without external fonts.", ln=True)
     pdf.cell(0, 10, f"Code: {data.get('code', 'N/A')}", ln=True)
     pdf.cell(0, 10, f"Element: {data.get('element', 'N/A')}", ln=True)
 
