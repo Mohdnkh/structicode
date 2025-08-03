@@ -3,11 +3,6 @@ from datetime import datetime
 import os
 
 class PDFReport(FPDF):
-    def __init__(self):
-        super().__init__()
-        self.add_page()
-        self.set_font("Arial", size=12)
-
     def header(self):
         self.set_font("Arial", size=16)
         self.set_text_color(0, 51, 102)
@@ -23,14 +18,17 @@ class PDFReport(FPDF):
         self.set_text_color(150, 150, 150)
         self.cell(0, 10, f"Page {self.page_no()}", align="C")
 
-def sanitize_text(text):
+def sanitize(text):
     try:
-        return str(text).encode('latin-1', 'ignore').decode('latin-1')
+        return str(text).encode("latin-1", "ignore").decode("latin-1")
     except:
         return str(text)
 
 def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf = PDFReport()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.set_text_color(0, 0, 0)
 
     symbol_descriptions = {
         "As (mm²)": "Steel Area",
@@ -47,81 +45,94 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
         "As_top_provided (mm²/m)": "Provided Top Steel"
     }
 
+    # 1. Project Info
     pdf.set_fill_color(230, 230, 250)
     pdf.set_font("Arial", "", 12)
     pdf.cell(0, 10, "1. Project Information", ln=True, fill=True)
     pdf.set_font("Arial", size=11)
     pdf.cell(0, 8, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
-    pdf.cell(0, 8, f"Design Code: {sanitize_text(data.get('code', 'N/A'))}", ln=True)
+    pdf.cell(0, 8, f"Design Code: {sanitize(data.get('code', 'N/A'))}", ln=True)
     element_type = data.get('element') or data.get('data', {}).get('element')
-    pdf.cell(0, 8, f"Element Type: {sanitize_text(element_type or 'N/A')}", ln=True)
+    pdf.cell(0, 8, f"Element Type: {sanitize(element_type or 'N/A')}", ln=True)
     pdf.ln(6)
 
+    # 2. Input Parameters
     pdf.set_fill_color(220, 245, 245)
+    pdf.set_font("Arial", "", 12)
     pdf.cell(0, 10, "2. Input Parameters", ln=True, fill=True)
+    pdf.set_font("Arial", size=11)
     input_data = data.get("data") or data
     for key, value in input_data.items():
         if isinstance(value, dict):
-            pdf.cell(0, 8, f"{sanitize_text(key.capitalize())}:", ln=True)
+            pdf.cell(0, 8, sanitize(f"{key.capitalize()}: "), ln=True)
             for subkey, subval in value.items():
                 desc = symbol_descriptions.get(subkey, "")
                 line = f"   - {subkey}: {subval}"
                 if desc:
                     line += f" -> {desc}"
-                pdf.cell(0, 8, sanitize_text(line), ln=True)
+                pdf.cell(0, 8, sanitize(line), ln=True)
         else:
             desc = symbol_descriptions.get(key, "")
             line = f"{key}: {value}"
             if desc:
                 line += f" -> {desc}"
-            pdf.cell(0, 8, sanitize_text(line), ln=True)
+            pdf.cell(0, 8, sanitize(line), ln=True)
     pdf.ln(4)
 
+    # 3. Seismic Info
     seismic = result.get("result", {}).get("seismic")
     if seismic:
         pdf.set_fill_color(245, 230, 230)
+        pdf.set_font("Arial", "", 12)
         pdf.cell(0, 10, "3. Seismic Analysis", ln=True, fill=True)
+        pdf.set_font("Arial", size=11)
         for key, value in seismic.items():
-            pdf.cell(0, 8, sanitize_text(f"{key}: {value}"), ln=True)
+            pdf.cell(0, 8, sanitize(f"{key}: {value}"), ln=True)
         pdf.set_text_color(120, 120, 120)
-        pdf.set_font("Arial", "", 10)
-        pdf.multi_cell(0, 8, sanitize_text("Note: This is a preliminary seismic assessment..."))
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(0, 8, sanitize("Note: This is a preliminary seismic assessment..."))
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
+    # 4. Structural Info
     structural = result.get("result", {}).get("structural", {})
     pdf.set_fill_color(220, 235, 220)
+    pdf.set_font("Arial", "", 12)
     pdf.cell(0, 10, "4. Structural Analysis", ln=True, fill=True)
+    pdf.set_font("Arial", size=11)
     for key, value in structural.items():
         if key in ["details", "recommendations"]:
             continue
         if isinstance(value, dict):
-            pdf.cell(0, 8, f"{sanitize_text(key.capitalize())}:", ln=True)
+            pdf.cell(0, 8, sanitize(f"{key.capitalize()}: "), ln=True)
             for subkey, subval in value.items():
                 desc = symbol_descriptions.get(subkey, "")
                 line = f"   - {subkey}: {subval}"
                 if desc:
                     line += f" -> {desc}"
-                pdf.cell(0, 8, sanitize_text(line), ln=True)
+                pdf.cell(0, 8, sanitize(line), ln=True)
         else:
             desc = symbol_descriptions.get(key, "")
             line = f"{key}: {value}"
             if desc:
                 line += f" -> {desc}"
-            pdf.cell(0, 8, sanitize_text(line), ln=True)
+            pdf.cell(0, 8, sanitize(line), ln=True)
 
-    if "details" in structural:
+    # Details
+    if structural.get("details"):
         pdf.cell(0, 8, "Details:", ln=True)
         for key, val in structural["details"].items():
-            pdf.multi_cell(0, 8, sanitize_text(f"{key}: {val}"))
+            pdf.multi_cell(0, 8, sanitize(f"{key}: {val}"))
         pdf.ln(2)
 
+    # Recommendations
     if structural.get("recommendations"):
         pdf.set_fill_color(255, 255, 204)
+        pdf.set_font("Arial", "", 11)
         pdf.cell(0, 8, "Recommendations:", ln=True, fill=True)
         for rec in structural["recommendations"]:
             pdf.set_text_color(80, 80, 80)
-            pdf.multi_cell(0, 8, sanitize_text(f"- {rec}"))
+            pdf.multi_cell(0, 8, sanitize(f"- {rec}"))
         pdf.set_text_color(0, 0, 0)
 
     output_dir = os.path.abspath("reports")
