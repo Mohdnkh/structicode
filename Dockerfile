@@ -15,24 +15,20 @@ RUN npm run build
 FROM python:3.11-slim AS backend
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y gcc
 
-# Copy backend files
+# Copy backend source code
 COPY backend ./backend
 
-# ✅ Ensure font file is copied explicitly
-COPY backend/api/utils/DejaVuSans.ttf backend/api/utils/DejaVuSans.ttf
+# ✅ Copy the font file explicitly to ensure it's included
+COPY backend/api/utils/DejaVuSans.ttf ./backend/api/utils/DejaVuSans.ttf
 
-# Copy built frontend
+# Copy frontend build
 COPY --from=frontend /app/frontend/dist ./frontend-dist
 
-# Install backend dependencies
+# Install dependencies
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose API port
 EXPOSE 8000
-
-# Run FastAPI app from backend/api/main.py (where app = FastAPI())
 CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
