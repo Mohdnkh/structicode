@@ -1,6 +1,7 @@
 from fpdf import FPDF
 from datetime import datetime
 import os
+from pathlib import Path
 
 class PDFReport(FPDF):
     def header(self):
@@ -20,8 +21,8 @@ class PDFReport(FPDF):
 
 def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf = PDFReport()
-    font_path = os.path.join(os.path.dirname(__file__), "DejaVuSans.ttf")
-    pdf.add_font("DejaVu", "", font_path, uni=True)
+    font_path = Path(__file__).parent / "DejaVuSans.ttf"
+    pdf.add_font("DejaVu", "", str(font_path), uni=True)
 
     pdf.set_font("DejaVu", size=12)
     pdf.add_page()
