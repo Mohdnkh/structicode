@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y gcc
 # Copy backend files
 COPY backend ./backend
 
+# ✅ Ensure font file is copied explicitly
+COPY backend/api/utils/DejaVuSans.ttf backend/api/utils/DejaVuSans.ttf
+
 # Copy built frontend
 COPY --from=frontend /app/frontend/dist ./frontend-dist
 
