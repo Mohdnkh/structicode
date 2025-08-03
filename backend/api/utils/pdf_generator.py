@@ -21,14 +21,13 @@ class PDFReport(FPDF):
 
 def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf = PDFReport()
-    font_path = Path(__file__).parent / "DejaVuSans.ttf"
+    font_path = Path(__file__).resolve().parent / "DejaVuSans.ttf"
     pdf.add_font("DejaVu", "", str(font_path), uni=True)
 
     pdf.set_font("DejaVu", size=12)
     pdf.add_page()
     pdf.set_text_color(0, 0, 0)
 
-    # تعريف الرموز المستخدمة
     symbol_descriptions = {
         "As (mm²)": "Steel Area",
         "Mn (kN·m)": "Nominal Moment Capacity",
@@ -44,7 +43,6 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
         "As_top_provided (mm²/m)": "Provided Top Steel"
     }
 
-    # Section 1: Project Info
     pdf.set_fill_color(230, 230, 250)
     pdf.set_font("DejaVu", "", 12)
     pdf.cell(0, 10, "1. Project Information", ln=True, fill=True)
@@ -55,7 +53,6 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.cell(0, 8, f"Element Type: {element_type or 'N/A'}", ln=True)
     pdf.ln(6)
 
-    # Section 2: Input Parameters
     pdf.set_fill_color(220, 245, 245)
     pdf.set_font("DejaVu", "", 12)
     pdf.cell(0, 10, "2. Input Parameters", ln=True, fill=True)
@@ -80,7 +77,6 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
             pdf.cell(0, 8, line, ln=True)
     pdf.ln(4)
 
-    # Section 3: Seismic
     seismic = result.get("result", {}).get("seismic")
     if seismic:
         pdf.set_fill_color(245, 230, 230)
@@ -95,7 +91,6 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
-    # Section 4: Structural
     structural = result.get("result", {}).get("structural", {})
     pdf.set_fill_color(220, 235, 220)
     pdf.set_font("DejaVu", "", 12)
@@ -119,7 +114,6 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
                 line += f" → {desc}"
             pdf.cell(0, 8, line, ln=True)
 
-    # Details
     if "details" in structural:
         pdf.set_font("DejaVu", "", 11)
         pdf.cell(0, 8, "Details:", ln=True)
@@ -127,7 +121,6 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
             pdf.multi_cell(0, 8, f"{key}: {val}")
         pdf.ln(2)
 
-    # Recommendations
     if structural.get("recommendations"):
         pdf.set_fill_color(255, 255, 204)
         pdf.set_font("DejaVu", "", 11)
@@ -137,7 +130,6 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
             pdf.multi_cell(0, 8, f"- {rec}")
         pdf.set_text_color(0, 0, 0)
 
-    # Save properly
     output_dir = os.path.abspath("reports")
     os.makedirs(output_dir, exist_ok=True)
     full_path = os.path.join(output_dir, filename)
