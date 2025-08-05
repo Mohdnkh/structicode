@@ -21,15 +21,10 @@ from .engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
-# ✅ يخدم كل ملفات frontend (بما فيها index.html و /assets)
+# ✅ يخدم كل ملفات الواجهة React
 app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
 
-# ✅ إحذف الدالة القديمة:
-# @app.get("/")
-# def read_index():
-#     return FileResponse("frontend-dist/index.html")
-
-# ✅ CORS
+# ✅ إعداد CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,6 +43,7 @@ class PDFRequest(BaseModel):
     data: dict
     result: dict
 
+# ✅ تم تصحيح التعريف هنا 👇
 @app.post("/analyze")
 async def analyze_element(payload: AnalysisInput):
     code = payload.code
