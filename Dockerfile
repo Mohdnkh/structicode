@@ -10,6 +10,7 @@ RUN npm install
 COPY frontend ./
 
 # 🔥 شغّل vite مباشرة من node_modules بدل global
+RUN chmod +x ./node_modules/.bin/vite && npm run build
 RUN npm run build
 
 
