@@ -21,18 +21,18 @@ from .engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
-# ✅ Mount static frontend files (built React app)
-app.mount("/static", StaticFiles(directory="frontend-dist/assets", html=True), name="static")
+# ✅ يخدم كل ملفات frontend (بما فيها index.html و /assets)
+app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
 
-# ✅ Serve index.html on root `/` to load frontend
-@app.get("/")
-def read_index():
-    return FileResponse("frontend-dist/index.html")
+# ✅ إحذف الدالة القديمة:
+# @app.get("/")
+# def read_index():
+#     return FileResponse("frontend-dist/index.html")
 
-# ✅ CORS middleware
+# ✅ CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # يمكنك تغييره لاحقًا عند رفع الموقع
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
