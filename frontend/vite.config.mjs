@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export default defineConfig({
+  base: './', // ✅ هذا السطر ضروري لتعمل الملفات النسبية عند نشر الموقع
   plugins: [react()],
   resolve: {
     alias: {
