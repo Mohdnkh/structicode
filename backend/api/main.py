@@ -115,3 +115,10 @@ async def generate_pdf_report(request: PDFRequest):
     except Exception as e:
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
+
+        from fastapi.responses import HTMLResponse
+
+@app.get("/analyze", response_class=HTMLResponse)
+async def serve_analyze_page():
+    return FileResponse("frontend-dist/index.html")
+
