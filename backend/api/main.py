@@ -21,8 +21,6 @@ from .engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
-# ✅ يخدم كل ملفات الواجهة React
-app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
 
 # ✅ إعداد CORS
 app.add_middleware(
@@ -122,3 +120,4 @@ async def generate_pdf_report(request: PDFRequest):
 async def serve_analyze_page():
     return FileResponse("frontend-dist/index.html")
 
+app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
