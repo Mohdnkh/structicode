@@ -8,7 +8,8 @@ import SteelColumnForm from '../components/SteelColumnForm'
 import SteelBeamForm from '../components/SteelBeamForm'
 import { useTranslation } from 'react-i18next'
 
-const API_BASE = import.meta.env.VITE_API_URL
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 
 export default function Analyzer() {
   const { t, i18n } = useTranslation()
