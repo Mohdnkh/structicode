@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fastapi.responses import FileResponse
+import os
 
 from .engine.load_combination import combine_loads
 from .engine.code_router import get_code_handler
@@ -20,8 +21,13 @@ from .engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
-# ✅ Mount frontend files for single Railway link
-app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
+# ✅ Mount static frontend files (built React app)
+app.mount("/static", StaticFiles(directory="frontend-dist/assets", html=True), name="static")
+
+# ✅ Serve index.html on root `/` to load frontend
+@app.get("/")
+def read_index():
+    return FileResponse("frontend-dist/index.html")
 
 # ✅ CORS middleware
 app.add_middleware(
