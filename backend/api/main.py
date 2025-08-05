@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fastapi.responses import FileResponse
 
@@ -19,10 +20,13 @@ from .engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
+# ✅ Mount frontend files for single Railway link
+app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
+
 # ✅ CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # يمكنك تخصيص هذا لاحقًا لرابط Vercel مثلاً
+    allow_origins=["*"],  # يمكنك تغييره لاحقًا عند رفع الموقع
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

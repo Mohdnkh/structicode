@@ -10,7 +10,8 @@ RUN npm install
 COPY frontend ./
 
 # 🔥 شغّل vite مباشرة من node_modules بدل global
-RUN npx vite build
+RUN npm run build
+
 
 # Step 2: Set up backend
 FROM python:3.11-slim AS backend
