@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr
 from backend.db.db import SessionLocal
 from backend.db.models import User
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()  # ✅ شلنا prefix="/auth"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # سر التشفير

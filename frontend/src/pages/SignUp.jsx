@@ -15,13 +15,14 @@ export default function SignUp() {
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
       setError('Passwords do not match')
+      setTimeout(() => setError(''), 3000)   // ✅ يمسح الرسالة بعد 3 ثواني
       return
     }
 
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`${API_BASE}/register`, {   // ✅ عدلنا الرابط
+      const res = await fetch(`${API_BASE}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

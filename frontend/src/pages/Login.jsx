@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true)
     setMessage('')
     try {
-      const res = await fetch(`${API_BASE}/login`, {   // ✅ عدلنا الرابط ليتطابق مع backend
+      const res = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -79,6 +79,17 @@ export default function Login() {
         </button>
 
         {message && <p style={{ marginTop: '1rem', color: 'red' }}>{message}</p>}
+
+        {/* ✅ زر Create Account */}
+        <p style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          Don't have an account?{' '}
+          <span
+            style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 'bold' }}
+            onClick={() => navigate('/signup')}
+          >
+            Create Account
+          </span>
+        </p>
       </div>
     </div>
   )
