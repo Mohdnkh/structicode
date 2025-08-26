@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -13,7 +15,7 @@ export default function Login() {
     setLoading(true)
     setMessage('')
     try {
-      const res = await fetch('/login', {
+      const res = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -21,13 +23,14 @@ export default function Login() {
       const data = await res.json()
 
       if (res.ok && data.access_token) {
-        localStorage.setItem('token', data.access_token)
+        localStorage.setItem('auth_token', data.access_token)
         navigate('/analyze')
       } else {
-        setMessage(data.detail || 'Login failed.')
+        setMessage(data.detail || data.message || 'Login failed.')
       }
     } catch (err) {
-      setMessage('Something went wrong.')
+      console.error('Login Error:', err)
+      setMessage('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -70,11 +73,34 @@ export default function Login() {
           className="input"
         />
 
-        <button onClick={handleLogin} disabled={loading} style={{ marginTop: '1rem' }}>
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          style={{
+            marginTop: '1rem',
+            width: '100%',
+            padding: '12px',
+            background: '#2563eb',
+            color: 'white',
+            fontWeight: 'bold',
+            border: 'none',
+            borderRadius: '10px'
+          }}
+        >
           {loading ? 'Logging in...' : 'Login'}
         </button>
 
         {message && <p style={{ marginTop: '1rem', color: 'red' }}>{message}</p>}
+
+        <p style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          Don’t have an account?{' '}
+          <span
+            style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 'bold' }}
+            onClick={() => navigate('/signup')}
+          >
+            Sign Up
+          </span>
+        </p>
       </div>
     </div>
   )

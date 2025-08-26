@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom' // ✅ مضافة حديثًا
+import { useNavigate } from 'react-router-dom'
 import BeamForm from '../components/BeamForm'
 import ColumnForm from '../components/ColumnForm'
 import SlabForm from '../components/SlabForm'
@@ -13,7 +13,7 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function Analyzer() {
   const { t, i18n } = useTranslation()
-  const navigate = useNavigate() // ✅ جديدة
+  const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [element, setElement] = useState('')
   const [result, setResult] = useState(null)
@@ -23,18 +23,16 @@ export default function Analyzer() {
 
   // ✅ تحقق من التوكن
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('auth_token')
     if (!token) {
       navigate('/login')
     }
-  }, [])
+  }, [navigate])
 
+  // ✅ اتجاه اللغة
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
   }, [i18n.language])
-
-  // ... باقي كودك زي ما هو (ما تغير ولا شي)
-
 
   const codes = ['ACI', 'BS', 'Eurocode', 'AS', 'CSA', 'IS', 'Jordan', 'Egypt', 'Saudi', 'UAE', 'Turkey']
   const concreteElements = [
@@ -84,6 +82,7 @@ export default function Analyzer() {
       const json = await response.json()
       setResult(json)
     } catch (error) {
+      console.error('Analyze Error:', error)
       setResult({ status: 'error', message: 'Failed to analyze. Please check server connection.' })
     } finally {
       setLoading(false)
@@ -220,7 +219,12 @@ export default function Analyzer() {
 
         {result?.status === 'success' && (
           <div style={{ marginTop: '2rem' }}>
-            <div style={{ backgroundColor: result.result.structural?.status === 'safe' ? '#e6f4ea' : '#fde8e8', padding: '12px 16px', borderRadius: '8px', marginBottom: '1rem' }}>
+            <div style={{
+              backgroundColor: result.result.structural?.status === 'safe' ? '#e6f4ea' : '#fde8e8',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '1rem'
+            }}>
               <h3>Structural Check: {result.result.structural?.status}</h3>
             </div>
 
@@ -264,7 +268,15 @@ export default function Analyzer() {
             )}
 
             <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-              <button onClick={downloadPDF} style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: '12px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
+              <button onClick={downloadPDF} style={{
+                backgroundColor: '#2563eb',
+                color: 'white',
+                padding: '10px 24px',
+                borderRadius: '12px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: 'pointer'
+              }}>
                 Download PDF Report
               </button>
             </div>

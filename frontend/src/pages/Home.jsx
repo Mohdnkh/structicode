@@ -1,11 +1,9 @@
-import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Lightbulb, Ruler, Globe2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-export default function Home() {
+export default function Home({ onStart }) {
   const { t, i18n } = useTranslation()
-  const navigate = useNavigate()
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ar' ? 'en' : 'ar'
@@ -14,46 +12,42 @@ export default function Home() {
   }
 
   return (
-  <div
-    style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #f8fafc, #e2e8f0)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      padding: '2rem',
-      position: 'relative',
-      overflow: 'hidden',
-    }}
-  >
-    
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(to bottom, #f8fafc, #e2e8f0)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: '2rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* زر تغيير اللغة */}
+      <button
+        onClick={toggleLanguage}
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          background: '#ffffff',
+          border: '1px solid #ccc',
+          padding: '6px 16px',
+          borderRadius: '8px',
+          fontWeight: '600',
+          fontSize: '0.95rem',
+          cursor: 'pointer',
+          zIndex: 999,
+          color: '#111',
+        }}
+      >
+        {i18n.language === 'ar' ? 'EN' : 'AR'}
+      </button>
 
-    {/* زر تغيير اللغة */}
-    <button
-  onClick={toggleLanguage}
-  style={{
-    position: 'absolute',
-    top: '1rem',
-    right: '1rem',
-    background: '#ffffff',
-    border: '1px solid #ccc',
-    padding: '6px 16px',
-    borderRadius: '8px',
-    fontWeight: '600',
-    fontSize: '0.95rem',
-    cursor: 'pointer',
-    zIndex: 999,
-    color: '#111',
-  }}
->
-  {i18n.language === 'ar' ? 'EN' : 'AR'}
-</button>
-
-
-
-      {/* الخلفية المصممة */}
+      {/* الخلفية */}
       <motion.div
         style={{
           position: 'absolute',
@@ -72,7 +66,7 @@ export default function Home() {
         />
       </motion.div>
 
-      {/* المحتوى الرئيسي */}
+      {/* المحتوى */}
       <div style={{ position: 'relative', zIndex: 10, maxWidth: '800px', width: '100%' }}>
         <motion.img
           src="/logo-structicode.png"
@@ -124,7 +118,7 @@ export default function Home() {
           transition={{ delay: 0.8 }}
         >
           <button
-            onClick={() => navigate('/analyze')}
+            onClick={onStart}
             style={{
               fontSize: '1rem',
               padding: '0.75rem 1.5rem',
@@ -142,7 +136,7 @@ export default function Home() {
         </motion.div>
       </div>
 
-      {/* المزايا السريعة */}
+      {/* المزايا */}
       <motion.div
         style={{
           position: 'relative',

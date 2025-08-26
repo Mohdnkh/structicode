@@ -5,11 +5,11 @@ from pydantic import BaseModel
 from fastapi.responses import FileResponse, HTMLResponse
 import os
 
-# ✅ استيراد الراوتر وقاعدة البيانات
-from backend.auth.register import router as register_router
+# ✅ استيراد الراوترات
+from backend.auth.signup import router as signup_router
 from backend.auth.verify import router as verify_router
 from backend.auth.login import router as login_router
-from backend.auth.auth_utils import get_current_user  # ✅ لحماية المسارات
+from backend.auth.auth_utils import get_current_user
 from backend.db.db import init_db
 
 from .engine.load_combination import combine_loads
@@ -31,9 +31,9 @@ app = FastAPI()
 # ✅ إنشاء قاعدة البيانات عند التشغيل الأول
 init_db()
 
-# ✅ ربط الراوترات
+# ✅ ربط الراوترات كلها تحت /auth
 app.include_router(login_router)
-app.include_router(register_router)
+app.include_router(signup_router)
 app.include_router(verify_router)
 
 # ✅ إعداد CORS
@@ -55,7 +55,7 @@ class PDFRequest(BaseModel):
     data: dict
     result: dict
 
-# ✅ تم حماية المسار باستخدام JWT
+# ✅ حماية التحليل باستخدام JWT
 @app.post("/analyze")
 async def analyze_element(payload: AnalysisInput, user=Depends(get_current_user)):
     code = payload.code
@@ -87,7 +87,7 @@ async def analyze_element(payload: AnalysisInput, user=Depends(get_current_user)
         elif element_type == "footing":
             structural = analyze_concrete_footing(data, code)
         elif element_type == "staircase":
-            structural = analyze_concrete_staircase(data, code)
+            structural = analyze_concrete_staircase(data)
         else:
             handler = get_code_handler(code)
             if not handler:
@@ -113,6 +113,7 @@ async def analyze_element(payload: AnalysisInput, user=Depends(get_current_user)
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# ✅ PDF report (ممكن تحميه بـ JWT إذا بدك)
 @app.post("/generate-pdf")
 async def generate_pdf_report(request: PDFRequest):
     try:
@@ -128,7 +129,7 @@ async def generate_pdf_report(request: PDFRequest):
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
 
-# ✅ يرجع بيانات المستخدم الحالي
+# ✅ بيانات المستخدم الحالي
 @app.get("/me")
 def get_me(user=Depends(get_current_user)):
     return {"email": user.email, "created_at": user.created_at}
