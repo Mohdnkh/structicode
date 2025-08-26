@@ -2,16 +2,18 @@
 FROM node:18 AS frontend
 WORKDIR /app/frontend
 
-# نسخ ملفات الباكج وتثبيت الحزم
+# نسخ package.json و vite.config.js وكل ما يلزم
 COPY frontend/package*.json ./
+COPY frontend/vite.config.js ./
+
+# تثبيت الحزم
 RUN npm install
 
-# نسخ باقي كود الواجهة
-COPY frontend ./
+# نسخ باقي ملفات الواجهة (بما فيها src و public)
+COPY frontend ./ 
 
-# ✅ منح صلاحية تنفيذ لـ vite ثم تشغيل build
-RUN chmod +x ./node_modules/.bin/vite
-RUN npm run build
+# منح صلاحية تنفيذ لـ vite وتشغيل build
+RUN chmod +x ./node_modules/.bin/vite && npm run build
 
 # Step 2: Set up backend
 FROM python:3.11-slim AS backend

@@ -6,7 +6,8 @@
     "dev": "concurrently -k \"npm run backend\" \"npm run delayed-frontend\"",
     "frontend": "cd frontend && npm run dev",
     "delayed-frontend": "wait-on tcp:8000 && npm run frontend",
-    "backend": "powershell -Command \"cd backend; $env:PYTHONPATH='.'; uvicorn api.main:app --reload\""
+    "backend": "powershell -Command \"cd backend; $env:PYTHONPATH='.'; uvicorn api.main:app --reload\"",
+    "build": "cd frontend && npm install && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
