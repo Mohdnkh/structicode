@@ -6,8 +6,8 @@ import SignUp from "./pages/SignUp"
 import Verify from "./pages/Verify"
 import Login from "./pages/Login"
 
-// ✅ فحص اذا المستخدم مسجل دخول
-const isAuthed = () => Boolean(localStorage.getItem("auth_token"))
+// ✅ فحص اذا المستخدم مسجل دخول (باستخدام access_token)
+const isAuthed = () => Boolean(localStorage.getItem("access_token"))
 
 // ✅ مكون لحماية الصفحات (ما يفتحها غير المسجلين)
 function PrivateRoute({ children }) {
