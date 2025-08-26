@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 import os
 
 # ✅ استيراد الراوترات
@@ -134,9 +134,6 @@ async def generate_pdf_report(request: PDFRequest):
 def get_me(user=Depends(get_current_user)):
     return {"email": user.email, "created_at": user.created_at}
 
-@app.get("/analyze", response_class=HTMLResponse)
-async def serve_analyze_page():
-    return FileResponse("frontend-dist/index.html")
-
 # ✅ هذا السطر لازم يكون آخر إشي
-app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
+# يخدم ملفات React من frontend/dist (بعد ما Railway يعمل build)
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
