@@ -6,6 +6,7 @@ const API_BASE = import.meta.env.VITE_API_URL || ''
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -64,15 +65,32 @@ export default function Login() {
           value={email}
           onChange={e => setEmail(e.target.value)}
           className="input"
+          style={{ marginBottom: '1rem' }}
         />
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="input"
-        />
+        {/* ✅ Password مع زر 👁 */}
+        <div style={{ position: 'relative', marginBottom: '1rem' }}>
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="input"
+            style={{ width: '100%' }}
+          />
+          <span
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer'
+            }}
+          >
+            {showPassword ? '🙈' : '👁'}
+          </span>
+        </div>
 
         <button onClick={handleLogin} disabled={loading} style={{ marginTop: '1rem' }}>
           {loading ? 'Logging in...' : 'Login'}

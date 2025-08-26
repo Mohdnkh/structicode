@@ -7,6 +7,8 @@ export default function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -15,14 +17,14 @@ export default function SignUp() {
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
       setError('Passwords do not match')
-      setTimeout(() => setError(''), 3000)   // ✅ يمسح الرسالة بعد 3 ثواني
+      setTimeout(() => setError(''), 3000)
       return
     }
 
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`${API_BASE}/register`, {
+      const res = await fetch(`${API_BASE}/signup`, {   // ✅ عدلنا الرابط
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -76,33 +78,59 @@ export default function SignUp() {
           }}
         />
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '10px',
-            marginBottom: '1rem',
-            borderRadius: '8px',
-            border: '1px solid #ccc'
-          }}
-        />
+        <div style={{ position: 'relative', marginBottom: '1rem' }}>
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1px solid #ccc'
+            }}
+          />
+          <span
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer'
+            }}
+          >
+            {showPassword ? '🙈' : '👁'}
+          </span>
+        </div>
 
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '10px',
-            marginBottom: '1rem',
-            borderRadius: '8px',
-            border: '1px solid #ccc'
-          }}
-        />
+        <div style={{ position: 'relative', marginBottom: '1rem' }}>
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1px solid #ccc'
+            }}
+          />
+          <span
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer'
+            }}
+          >
+            {showConfirmPassword ? '🙈' : '👁'}
+          </span>
+        </div>
 
         {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
 
