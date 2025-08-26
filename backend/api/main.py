@@ -31,7 +31,7 @@ app = FastAPI()
 # ✅ إنشاء قاعدة البيانات عند التشغيل الأول
 init_db()
 
-# ✅ ربط الراوترات كلها تحت /auth
+# ✅ ربط الراوترات
 app.include_router(login_router)
 app.include_router(signup_router)
 app.include_router(verify_router)
@@ -113,9 +113,9 @@ async def analyze_element(payload: AnalysisInput, user=Depends(get_current_user)
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# ✅ PDF report (ممكن تحميه بـ JWT إذا بدك)
+# ✅ PDF report (محمي بالتوكن زي التحليل)
 @app.post("/generate-pdf")
-async def generate_pdf_report(request: PDFRequest):
+async def generate_pdf_report(request: PDFRequest, user=Depends(get_current_user)):
     try:
         filename = "report.pdf"
         combined_data = {
@@ -135,5 +135,4 @@ def get_me(user=Depends(get_current_user)):
     return {"email": user.email, "created_at": user.created_at}
 
 # ✅ هذا السطر لازم يكون آخر إشي
-# نخلي FastAPI يخدم من frontend-dist (زي ما كان شغال معك أول مرة)
 app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")

@@ -23,7 +23,7 @@ export default function Analyzer() {
 
   // ✅ تحقق من التوكن
   useEffect(() => {
-    const token = localStorage.getItem('access_token')   // <-- عدلناها
+    const token = localStorage.getItem('access_token')
     if (!token) {
       navigate('/login')
     }
@@ -32,10 +32,6 @@ export default function Analyzer() {
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
   }, [i18n.language])
-
-  // ... باقي الكود زي ما هو (ما تغير)
-
-
 
   const codes = ['ACI', 'BS', 'Eurocode', 'AS', 'CSA', 'IS', 'Jordan', 'Egypt', 'Saudi', 'UAE', 'Turkey']
   const concreteElements = [
@@ -77,9 +73,13 @@ export default function Analyzer() {
     }
 
     try {
+      const token = localStorage.getItem('access_token')  // ✅
       const response = await fetch(`${API_BASE}/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`   // ✅
+        },
         body: JSON.stringify(payload)
       })
       const json = await response.json()
@@ -95,9 +95,13 @@ export default function Analyzer() {
   const downloadPDF = async () => {
     if (!lastInput || !result) return
     try {
+      const token = localStorage.getItem('access_token')  // ✅
       const res = await fetch(`${API_BASE}/generate-pdf`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`   // ✅
+        },
         body: JSON.stringify({ data: { ...lastInput, code, element }, result })
       })
       const blob = await res.blob()
