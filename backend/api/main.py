@@ -5,6 +5,10 @@ from pydantic import BaseModel
 from fastapi.responses import FileResponse, HTMLResponse
 import os
 
+# ✅ استيراد الراوتر وقاعدة البيانات
+from backend.auth.register import router as register_router
+from backend.db.db import init_db
+
 from .engine.load_combination import combine_loads
 from .engine.code_router import get_code_handler
 from .engine.seismic_router import get_seismic_handler
@@ -21,6 +25,11 @@ from .engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
+# ✅ إنشاء قاعدة البيانات عند التشغيل الأول
+init_db()
+
+# ✅ ربط راوتر التسجيل
+app.include_router(register_router)
 
 # ✅ إعداد CORS
 app.add_middleware(
@@ -114,10 +123,9 @@ async def generate_pdf_report(request: PDFRequest):
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
 
-        from fastapi.responses import HTMLResponse
-
 @app.get("/analyze", response_class=HTMLResponse)
 async def serve_analyze_page():
     return FileResponse("frontend-dist/index.html")
 
+# ✅ هذا السطر لازم يكون آخر إشي
 app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
