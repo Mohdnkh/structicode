@@ -9,8 +9,8 @@ RUN npm install
 # نسخ باقي كود الواجهة
 COPY frontend ./
 
-# 🔧 حل مشكلة صلاحيات vite وشغّل build
-RUN chmod +x ./node_modules/.bin/vite && npm run build
+# ✅ شغّل build فقط بدون chmod
+RUN npm run build
 
 # Step 2: Set up backend
 FROM python:3.11-slim AS backend
