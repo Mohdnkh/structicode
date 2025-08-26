@@ -4,10 +4,9 @@ from pydantic import BaseModel, EmailStr
 
 from backend.db.db import SessionLocal
 from backend.db.models import User
-from backend.auth.login import create_access_token  # لإرجاع توكن بعد التفعيل
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-
+router = APIRouter()
+    
 def get_db():
     db = SessionLocal()
     try:
@@ -33,15 +32,8 @@ def verify_email(req: VerifyRequest, db: Session = Depends(get_db)):
     if user.verification_code != req.code:
         raise HTTPException(status_code=400, detail="Invalid verification code")
 
-    # ✅ تفعيل الحساب
     user.is_verified = True
-    user.verification_code = None
+    user.verification_code = None  # نلغي الكود بعد الاستخدام
     db.commit()
 
-    # ✅ إنشاء access_token بعد التفعيل
-    access_token = create_access_token(data={"sub": user.email})
-    return {
-        "message": "Email verified successfully",
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return {"message": "Email verified successfully"}
