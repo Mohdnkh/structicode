@@ -135,5 +135,5 @@ def get_me(user=Depends(get_current_user)):
     return {"email": user.email, "created_at": user.created_at}
 
 # ✅ هذا السطر لازم يكون آخر إشي
-# يخدم ملفات React من frontend/dist (بعد ما Railway يعمل build)
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+# نخلي FastAPI يخدم من frontend-dist (زي ما كان شغال معك أول مرة)
+app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
