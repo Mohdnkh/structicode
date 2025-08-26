@@ -9,7 +9,8 @@ RUN npm install
 # نسخ باقي كود الواجهة
 COPY frontend ./
 
-# ✅ شغّل build فقط بدون chmod
+# ✅ منح صلاحية تنفيذ لـ vite ثم تشغيل build
+RUN chmod +x ./node_modules/.bin/vite
 RUN npm run build
 
 # Step 2: Set up backend
