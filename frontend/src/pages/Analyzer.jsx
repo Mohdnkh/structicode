@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom' // ✅ مضافة حديثًا
 import BeamForm from '../components/BeamForm'
 import ColumnForm from '../components/ColumnForm'
 import SlabForm from '../components/SlabForm'
@@ -10,9 +11,9 @@ import { useTranslation } from 'react-i18next'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
-
 export default function Analyzer() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate() // ✅ جديدة
   const [code, setCode] = useState('')
   const [element, setElement] = useState('')
   const [result, setResult] = useState(null)
@@ -20,9 +21,20 @@ export default function Analyzer() {
   const [loading, setLoading] = useState(false)
   const [lastInput, setLastInput] = useState(null)
 
+  // ✅ تحقق من التوكن
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login')
+    }
+  }, [])
+
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
   }, [i18n.language])
+
+  // ... باقي كودك زي ما هو (ما تغير ولا شي)
+
 
   const codes = ['ACI', 'BS', 'Eurocode', 'AS', 'CSA', 'IS', 'Jordan', 'Egypt', 'Saudi', 'UAE', 'Turkey']
   const concreteElements = [

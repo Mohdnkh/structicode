@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -7,6 +7,9 @@ import os
 
 # ✅ استيراد الراوتر وقاعدة البيانات
 from backend.auth.register import router as register_router
+from backend.auth.verify import router as verify_router
+from backend.auth.login import router as login_router
+from backend.auth.auth_utils import get_current_user  # ✅ لحماية المسارات
 from backend.db.db import init_db
 
 from .engine.load_combination import combine_loads
@@ -28,8 +31,10 @@ app = FastAPI()
 # ✅ إنشاء قاعدة البيانات عند التشغيل الأول
 init_db()
 
-# ✅ ربط راوتر التسجيل
+# ✅ ربط الراوترات
+app.include_router(login_router)
 app.include_router(register_router)
+app.include_router(verify_router)
 
 # ✅ إعداد CORS
 app.add_middleware(
@@ -50,9 +55,9 @@ class PDFRequest(BaseModel):
     data: dict
     result: dict
 
-# ✅ تم تصحيح التعريف هنا 👇
+# ✅ تم حماية المسار باستخدام JWT
 @app.post("/analyze")
-async def analyze_element(payload: AnalysisInput):
+async def analyze_element(payload: AnalysisInput, user=Depends(get_current_user)):
     code = payload.code
     element_type = payload.element
     seismic_data = payload.seismic
@@ -122,6 +127,11 @@ async def generate_pdf_report(request: PDFRequest):
     except Exception as e:
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
+
+# ✅ يرجع بيانات المستخدم الحالي
+@app.get("/me")
+def get_me(user=Depends(get_current_user)):
+    return {"email": user.email, "created_at": user.created_at}
 
 @app.get("/analyze", response_class=HTMLResponse)
 async def serve_analyze_page():
