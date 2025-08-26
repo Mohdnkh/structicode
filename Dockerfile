@@ -16,7 +16,7 @@ RUN npm rebuild esbuild
 COPY frontend ./ 
 
 # تشغيل build
-RUN npx vite build
+RUN chmod +x node_modules/.bin/vite && npx vite build
 
 # Step 2: Set up backend
 FROM python:3.11-slim AS backend
