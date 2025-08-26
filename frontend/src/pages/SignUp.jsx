@@ -21,7 +21,7 @@ export default function SignUp() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
+      const res = await fetch(`${API_BASE}/register`, {   // ✅ عدلنا الرابط
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

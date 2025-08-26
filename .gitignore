@@ -1,18 +1,57 @@
-# ملفات ما بدنا نرفعها على GitHub
-
-# مجلدات ضخمة مؤقتة
-node_modules/
+# =========================
+# Python / FastAPI
+# =========================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
 
-# ملفات بيئية
-frontend/.env
+# Virtual environments
+.venv/
+venv/
+ENV/
 
-# ملفات النظام
-.DS_Store
-
-# مجلدات الإخراج
+# Reports / temporary files
 reports/
-echo ".env"
-frontend/dist
-frontend-dist
+*.log
+
+# =========================
+# Node.js / React (Vite)
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+frontend/dist/
+dist/
+
+# =========================
+# Environment & secrets
+# =========================
+.env
+.env.local
+.env.*.local
+
+# =========================
+# OS / Editor files
+# =========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# =========================
+# Railway / Docker
+# =========================
+# (نخلي railway.json و Dockerfile لأنهم مهمين للنشر)
+
+# =========================
+# استثناءات - نسمح برفع frontend-dist
+# =========================
+!frontend-dist/
