@@ -9,8 +9,8 @@ COPY frontend/vite.config.js ./
 # تثبيت الحزم
 RUN npm install
 
-# ✅ إعادة بناء esbuild داخل البيئة
-RUN npm rebuild esbuild
+# ✅ إزالة esbuild وإعادة تركيبه لحل مشكلة binary mismatch
+RUN npm uninstall esbuild && npm install esbuild@latest && npm rebuild esbuil
 
 # نسخ باقي ملفات الواجهة
 COPY frontend ./ 
