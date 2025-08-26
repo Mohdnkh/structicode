@@ -11,10 +11,10 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "esbuild": "^0.25.9",
     "wait-on": "^8.0.4"
   },
   "dependencies": {
-    "esbuild": "^0.25.9",
     "framer-motion": "^12.23.11",
     "i18next": "^25.3.2",
     "lucide-react": "^0.532.0",
