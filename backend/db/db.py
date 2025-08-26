@@ -1,16 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .models import Base
+import os
 
-# SQLite database path
-DATABASE_URL = "sqlite:///./users.db"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# إنشاء الاتصال بقاعدة البيانات
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+if not DATABASE_URL:
+    raise ValueError("❌ DATABASE_URL is not set in environment variables")
 
-# إنشاء جلسة التعامل مع قاعدة البيانات
+engine = create_engine(DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# استدعاء هذا لإنشاء الجداول أول مرة
 def init_db():
     Base.metadata.create_all(bind=engine)
