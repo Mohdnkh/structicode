@@ -23,16 +23,19 @@ export default function Analyzer() {
 
   // ✅ تحقق من التوكن
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('access_token')   // <-- عدلناها
     if (!token) {
       navigate('/login')
     }
-  }, [navigate])
+  }, [])
 
-  // ✅ اتجاه اللغة
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
   }, [i18n.language])
+
+  // ... باقي الكود زي ما هو (ما تغير)
+
+
 
   const codes = ['ACI', 'BS', 'Eurocode', 'AS', 'CSA', 'IS', 'Jordan', 'Egypt', 'Saudi', 'UAE', 'Turkey']
   const concreteElements = [
