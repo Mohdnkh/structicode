@@ -1,6 +1,21 @@
+# Node
 node_modules
 package-lock.json
 dist
+
+# Frontend
 frontend/node_modules
 frontend/package-lock.json
 frontend/dist
+
+# Git
+.git
+.gitignore
+
+# Editors
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db

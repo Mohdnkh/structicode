@@ -9,14 +9,14 @@ COPY frontend/vite.config.js ./
 # تثبيت الحزم
 RUN npm install
 
-# ✅ إزالة esbuild وإعادة تركيبه لحل مشكلة binary mismatch
-RUN npm uninstall esbuild && npm install esbuild@latest && npm rebuild esbuil
+# ✅ إصلاح esbuild
+RUN npm uninstall esbuild && npm install esbuild@latest && npm rebuild esbuild
 
 # نسخ باقي ملفات الواجهة
 COPY frontend ./ 
 
 # تشغيل build
-RUN chmod +x node_modules/.bin/vite && npx vite build
+RUN npm run build
 
 # Step 2: Set up backend
 FROM python:3.11-slim AS backend
@@ -24,16 +24,15 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y gcc
 
-# نسخ ملفات الباكند
+# نسخ requirements أولاً (للاستفادة من الـ cache)
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# نسخ باقي ملفات الباكند
 COPY backend ./backend
 
 # نسخ ملفات الواجهة المبنية
 COPY --from=frontend /app/frontend/dist ./frontend-dist
-
-# تثبيت مكتبات بايثون
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install sqlalchemy
 
 EXPOSE 8000
 

@@ -157,6 +157,28 @@ export default function Analyzer() {
           </select>
         </div>
 
+        {/* ✅ زر الانتقال لتحليل الهيكل الكامل */}
+        <div style={{ marginBottom: '2rem' }}>
+          <label style={{ fontWeight: 600 }}>{t('analyzer.structure')}</label>
+          <div>
+            <button
+              onClick={() => navigate('/structure-designer')}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '10px',
+                border: '1px solid #ccc',
+                fontWeight: '600',
+                backgroundColor: '#f3f4f6',
+                color: '#111',
+                cursor: 'pointer',
+                marginTop: '8px'
+              }}
+            >
+              {t('analyzer.structure_analysis')}
+            </button>
+          </div>
+        </div>
+
         {code && (
           <div style={{ marginBottom: '2rem' }}>
             <h4 style={{ fontWeight: 'bold', fontSize: '1.125rem', marginBottom: '1rem' }}>{t('analyzer.seismic')}</h4>

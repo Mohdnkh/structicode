@@ -9,7 +9,7 @@ from pydantic import BaseModel, EmailStr
 from backend.db.db import SessionLocal
 from backend.db.models import User
 
-router = APIRouter()  # ✅ شلنا prefix="/auth" للتناسق
+router = APIRouter()  # ✅ بدون prefix للتناسق
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_db():
@@ -19,19 +19,19 @@ def get_db():
     finally:
         db.close()
 
-# ✅ Pydantic schema
+# ✅ Schema
 class SignUpRequest(BaseModel):
     email: EmailStr
     password: str
 
 @router.post("/signup")
 def signup(req: SignUpRequest, db: Session = Depends(get_db)):
-    # تحقق إذا المستخدم موجود
+    # تحقق إذا الإيميل موجود
     existing_user = db.query(User).filter(User.email == req.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # تشفير الباسورد
+    # Hash للباسورد + كود التحقق
     hashed_password = pwd_context.hash(req.password)
     verification_code = str(random.randint(100000, 999999))
 
@@ -47,10 +47,14 @@ def signup(req: SignUpRequest, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     # إرسال الكود عبر Resend
+    resend_api_key = os.getenv("RESEND_API_KEY")
+    if not resend_api_key:
+        raise HTTPException(status_code=500, detail="Email service not configured")
+
     response = requests.post(
         "https://api.resend.com/emails",
         headers={
-            "Authorization": f"Bearer {os.getenv('RESEND_API_KEY')}",
+            "Authorization": f"Bearer {resend_api_key}",
             "Content-Type": "application/json"
         },
         json={
@@ -61,7 +65,7 @@ def signup(req: SignUpRequest, db: Session = Depends(get_db)):
         }
     )
 
-    if response.status_code != 200:
+    if response.status_code not in [200, 202]:
         raise HTTPException(status_code=500, detail="Failed to send verification email")
 
     return {

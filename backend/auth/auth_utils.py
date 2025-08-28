@@ -8,12 +8,12 @@ from backend.db.models import User
 
 import os
 
-# ✅ جلب القيم من البيئة
+# ✅ جلب القيم من البيئة أو القيمة الافتراضية
 SECRET_KEY = os.getenv("SECRET_KEY", "structicode-secret-key")
 ALGORITHM = "HS256"
 
-# ✅ توحيد المسار مع login
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+# ✅ لازم يتطابق مع login.py (اللي مساره /login)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 def get_db():
     db = SessionLocal()

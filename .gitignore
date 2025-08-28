@@ -49,9 +49,13 @@ Thumbs.db
 # =========================
 # Railway / Docker
 # =========================
-# (نخلي railway.json و Dockerfile لأنهم مهمين للنشر)
+# نخلي Railway & Docker configs
+!Dockerfile
+!docker-compose.yml
+!railway.json
 
 # =========================
-# استثناءات - نسمح برفع frontend-dist
+# استثناءات
 # =========================
+# نخلي نسخة الواجهة المجمعة مع الباكند
 !frontend-dist/

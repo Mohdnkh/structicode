@@ -6,20 +6,21 @@
     "dev": "concurrently -k \"npm run backend\" \"npm run delayed-frontend\"",
     "frontend": "cd frontend && npm run dev",
     "delayed-frontend": "wait-on tcp:8000 && npm run frontend",
-    "backend": "powershell -Command \"cd backend; $env:PYTHONPATH='.'; uvicorn api.main:app --reload\"",
+    "backend": "cd backend && PYTHONPATH=. uvicorn api.main:app --reload",
     "build": "cd frontend && npm install && npm run build",
-    "start": "uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+    "start": "cd backend && PYTHONPATH=. uvicorn api.main:app --host 0.0.0.0 --port 8000"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "esbuild": "^0.25.9",
     "wait-on": "^8.0.4"
   },
   "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.7.1",
     "framer-motion": "^12.23.11",
     "i18next": "^25.3.2",
-    "lucide-react": "^0.532.0",
     "react-i18next": "^15.6.1",
-    "react-router-dom": "^7.7.1"
+    "lucide-react": "^0.532.0"
   }
 }

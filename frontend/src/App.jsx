@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-route
 import Home from "./pages/Home"
 import Analyzer from "./pages/Analyzer"
 import SignUp from "./pages/SignUp"
-import Verify from "./pages/Verify"
 import Login from "./pages/Login"
+import StructureDesigner from "./pages/StructureDesigner"   // ✅ جديد
 
 // ✅ فحص اذا المستخدم مسجل دخول (باستخدام access_token)
 const isAuthed = () => Boolean(localStorage.getItem("access_token"))
@@ -14,7 +14,7 @@ function PrivateRoute({ children }) {
   return isAuthed() ? children : <Navigate to="/login" replace />
 }
 
-// ✅ مكون يمنع الدخول لصفحات login/signup/verify اذا الشخص مسجل أصلاً
+// ✅ مكون يمنع الدخول لصفحات login/signup اذا الشخص مسجل أصلاً
 function UnauthOnly({ children }) {
   return isAuthed() ? <Navigate to="/analyze" replace /> : children
 }
@@ -58,19 +58,20 @@ export default function App() {
         />
 
         <Route
-          path="/verify"
-          element={
-            <UnauthOnly>
-              <Verify />
-            </UnauthOnly>
-          }
-        />
-
-        <Route
           path="/analyze"
           element={
             <PrivateRoute>
               <Analyzer />
+            </PrivateRoute>
+          }
+        />
+
+        {/* ✅ الراوت الجديد لواجهة تحليل الهيكل */}
+        <Route
+          path="/structure-designer"
+          element={
+            <PrivateRoute>
+              <StructureDesigner />
             </PrivateRoute>
           }
         />

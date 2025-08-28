@@ -7,7 +7,6 @@ import os
 
 # ✅ استيراد الراوترات
 from backend.auth.signup import router as signup_router
-from backend.auth.verify import router as verify_router
 from backend.auth.login import router as login_router
 from backend.auth.auth_utils import get_current_user
 from backend.db.db import init_db
@@ -26,6 +25,9 @@ from .engine.concrete.column import analyze_concrete_column
 from .engine.concrete.footing import analyze_concrete_footing
 from .engine.concrete.staircase import analyze_concrete_staircase
 
+# ⬇️ استيراد الروتر الجديد
+from .engine import structure_router
+
 app = FastAPI()
 
 # ✅ إنشاء قاعدة البيانات عند التشغيل الأول
@@ -34,7 +36,10 @@ init_db()
 # ✅ ربط الراوترات
 app.include_router(login_router)
 app.include_router(signup_router)
-app.include_router(verify_router)
+# ❌ شلنا verify_router
+
+# ⬇️ ربط راوتر الهيكل
+app.include_router(structure_router.router, prefix="/api")
 
 # ✅ إعداد CORS
 app.add_middleware(

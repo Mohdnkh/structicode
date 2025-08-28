@@ -82,6 +82,62 @@ class BS:
     def analyze_steel_column(self, data):
         return analyze_steel_column(data, code="BS5950")
 
+    # ================================
+    # Structure-level analysis (with combos)
+    # ================================
+    def analyze_structure(self, structure_data: dict, raw_results: dict):
+        """
+        structure_data: JSON كامل للهيكل
+        raw_results: نتائج StructureAnalyzer (لكل Combination)
+        """
+        results = {}
+        gamma_c, gamma_s = 1.5, 1.15
+
+        for combo_id, combo_res in raw_results.items():
+            design = {}
+            for mid, forces in combo_res["member_forces"].items():
+                Mu, Vu, Nu = abs(forces["Mmax"]), abs(forces["Vmax"]), abs(forces["Nmax"])
+                member = next(m for m in structure_data["members"] if m["id"] == mid)
+                sec = next(s for s in structure_data["sections"] if s["id"] == member["sectionId"])
+                mat = next(m for m in structure_data["materials"] if m["id"] == member["materialId"])
+
+                bw, h, cover = sec["params"].get("bw", 0.3), sec["params"].get("h", 0.6), sec["params"].get("cover", 0.04)
+                d = h - cover
+                fck, fy = mat["fc"], mat["fy"]
+
+                # Design strengths
+                fcd = fck / gamma_c
+                fyd = fy / gamma_s
+
+                # Flexural requirement
+                As_req = (Mu*1e6) / (fyd * 1e3 * (d - 0.5*cover))
+
+                # Shear capacity (simplified BS8110)
+                Vc = 0.6 * (fck**0.5) * bw * d / gamma_c
+                shear_ok = Vu <= Vc
+
+                # Axial capacity
+                Pn = 0.35 * fcd * bw * h * 1e6 / 1000  # kN
+                axial_ok = Nu <= Pn
+
+                design[mid] = {
+                    "Mu": round(Mu, 2),
+                    "Vu": round(Vu, 2),
+                    "Nu": round(Nu, 2),
+                    "As_required": round(As_req, 2),
+                    "As_provided": round(As_req * 1.15, 2),  # overdesign factor ~ γs
+                    "Shear_OK": shear_ok,
+                    "Axial_OK": axial_ok,
+                    "Overall_OK": shear_ok and axial_ok
+                }
+
+            results[combo_id] = {
+                **combo_res,
+                "design": design
+            }
+
+        return results
+
     def analyze_seismic(self, data):
         return {
             "seismic_demand": 0,
