@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 import os
 
 # ✅ استيراد الراوترات
@@ -36,9 +36,6 @@ init_db()
 # ✅ ربط الراوترات
 app.include_router(login_router)
 app.include_router(signup_router)
-# ❌ شلنا verify_router
-
-# ⬇️ ربط راوتر الهيكل
 app.include_router(structure_router.router, prefix="/api")
 
 # ✅ إعداد CORS
@@ -139,5 +136,11 @@ async def generate_pdf_report(request: PDFRequest, user=Depends(get_current_user
 def get_me(user=Depends(get_current_user)):
     return {"email": user.email, "created_at": user.created_at}
 
-# ✅ هذا السطر لازم يكون آخر إشي
-app.mount("/", StaticFiles(directory="frontend-dist", html=True), name="frontend")
+# ✅ خدمة ملفات React (frontend/dist)
+app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+
+# ✅ fallback لأي route → يرجّع index.html
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str, request: Request):
+    index_path = os.path.join("frontend", "dist", "index.html")
+    return FileResponse(index_path)
