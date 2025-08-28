@@ -1,24 +1,26 @@
-# =========================
-# Backend فقط (مع نسخة frontend-dist جاهزة)
-# =========================
-FROM python:3.11-slim AS backend
+# ====== Stage 1: Build frontend ======
+FROM node:18 AS frontend-builder
+
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# ====== Stage 2: Backend ======
+FROM python:3.11
+
 WORKDIR /app
 
-# تثبيت متطلبات النظام
-RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
-
-# نسخ requirements أولاً (للاستفادة من الـ cache)
+# انسخ المتطلبات
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# نسخ باقي ملفات الباكند
-COPY backend ./backend
+# انسخ كود backend
+COPY backend/ ./backend
 
-# نسخ نسخة الواجهة الجاهزة (prebuilt) 
-COPY frontend-dist ./frontend-dist
+# انسخ frontend/dist من الستيج الأول
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# فتح البورت
-EXPOSE 8000
-
-# تشغيل التطبيق
+# شغل FastAPI
 CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

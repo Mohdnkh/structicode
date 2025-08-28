@@ -1,12 +1,11 @@
 # Node
 node_modules
 package-lock.json
-dist
 
 # Frontend
 frontend/node_modules
 frontend/package-lock.json
-frontend/dist
+# ملاحظة: ما منعنا frontend/dist عشان رح ننسخه من stage 1
 
 # Git
 .git
