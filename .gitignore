@@ -12,7 +12,6 @@ __pycache__/
 .venv/
 venv/
 ENV/
-
 # Reports / temporary files
 reports/
 *.log
@@ -26,8 +25,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build outputs
-frontend/dist/
-dist/
+# نرفع frontend/dist عشان Railway يستخدمه
+#dist/
 
 # =========================
 # Environment & secrets
@@ -49,13 +48,6 @@ Thumbs.db
 # =========================
 # Railway / Docker
 # =========================
-# نخلي Railway & Docker configs
 !Dockerfile
 !docker-compose.yml
 !railway.json
-
-# =========================
-# استثناءات
-# =========================
-# نخلي نسخة الواجهة المجمعة مع الباكند
-!frontend-dist/
