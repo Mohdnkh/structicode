@@ -8,6 +8,7 @@ import os
 # ✅ استيراد الراوترات
 from backend.auth.signup import router as signup_router
 from backend.auth.login import router as login_router
+from backend.auth.verify import router as verify_router
 from backend.auth.auth_utils import get_current_user
 from backend.db.db import init_db
 
@@ -36,6 +37,7 @@ init_db()
 # ✅ ربط الراوترات
 app.include_router(login_router)
 app.include_router(signup_router)
+app.include_router(verify_router) 
 app.include_router(structure_router.router, prefix="/api")
 
 # ✅ إعداد CORS
