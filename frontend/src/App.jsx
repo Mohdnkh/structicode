@@ -23,11 +23,8 @@ function UnauthOnly({ children }) {
 function HomeWrapper() {
   const navigate = useNavigate()
   const goStart = () => {
-    if (isAuthed()) {
-      navigate("/analyze")
-    } else {
-      navigate("/login")
-    }
+    // ✅ دايمًا يطلب تسجيل الدخول، حتى لو في access_token
+    navigate("/login")
   }
 
   return <Home onStart={goStart} />
