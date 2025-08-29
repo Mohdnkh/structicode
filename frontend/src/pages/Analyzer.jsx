@@ -86,8 +86,12 @@ export default function Analyzer() {
       const res = await fetch(`${API_BASE}/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: { ...lastInput, code, element }, result })
+        body: JSON.stringify({ 
+          data: { ...lastInput, code, element }, 
+          result: result.result   // ✅ نرسل فقط result الحقيقي
+        })
       })
+      if (!res.ok) throw new Error('Failed to generate PDF')
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -141,7 +145,7 @@ export default function Analyzer() {
           </select>
         </div>
 
-        {/* ✅ زر الانتقال لتحليل الهيكل الكامل */}
+        {/* زر تحليل الهيكل الكامل */}
         <div style={{ marginBottom: '2rem' }}>
           <label style={{ fontWeight: 600 }}>{t('analyzer.structure')}</label>
           <div>

@@ -106,7 +106,10 @@ export default function StructureDesigner() {
       const res = await fetch(`${API_BASE}/generate-pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: lastPayload, result: analysisResult }),
+        body: JSON.stringify({
+          data: lastPayload,
+          result: { results: analysisResult } // ✅ نغلفها بالطريقة الصحيحة
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to generate PDF");
@@ -177,8 +180,80 @@ export default function StructureDesigner() {
             {activeCombo && (
               <div>
                 <h3 className="font-semibold mb-2">Load Combination: {activeCombo}</h3>
-                {/* باقي النتائج نفس الكود القديم */}
-                {/* ... */}
+                {/* Displacements */}
+                <h4 className="font-medium mt-3">Displacements</h4>
+                <table className="w-full text-xs border mt-1 mb-2">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border p-1">Node</th>
+                      <th className="border p-1">ux</th>
+                      <th className="border p-1">uy</th>
+                      <th className="border p-1">rz</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(analysisResult[activeCombo].displacements || {}).map(([nid, disp]) => (
+                      <tr key={nid}>
+                        <td className="border p-1">{nid}</td>
+                        <td className="border p-1">{disp.ux.toFixed(4)}</td>
+                        <td className="border p-1">{disp.uy.toFixed(4)}</td>
+                        <td className="border p-1">{disp.rz.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Member Forces */}
+                <h4 className="font-medium mt-3">Member Forces</h4>
+                <table className="w-full text-xs border mt-1 mb-2">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border p-1">Member</th>
+                      <th className="border p-1">Nmax</th>
+                      <th className="border p-1">Vmax</th>
+                      <th className="border p-1">Mmax</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(analysisResult[activeCombo].member_forces || {}).map(([mid, f]) => (
+                      <tr key={mid}>
+                        <td className="border p-1">{mid}</td>
+                        <td className="border p-1">{f.Nmax.toFixed(2)}</td>
+                        <td className="border p-1">{f.Vmax.toFixed(2)}</td>
+                        <td className="border p-1">{f.Mmax.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Design Checks */}
+                <h4 className="font-medium mt-3">Design Checks</h4>
+                <table className="w-full text-xs border mt-1">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border p-1">Member</th>
+                      <th className="border p-1">Mu</th>
+                      <th className="border p-1">Vu</th>
+                      <th className="border p-1">Nu</th>
+                      <th className="border p-1">As_req</th>
+                      <th className="border p-1">OK</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(analysisResult[activeCombo].design || {}).map(([mid, d]) => (
+                      <tr key={mid}>
+                        <td className="border p-1">{mid}</td>
+                        <td className="border p-1">{d.Mu?.toFixed(2)}</td>
+                        <td className="border p-1">{d.Vu?.toFixed(2)}</td>
+                        <td className="border p-1">{d.Nu?.toFixed(2)}</td>
+                        <td className="border p-1">{d.As_required}</td>
+                        <td className="border p-1">{d.Overall_OK ? "✅" : "❌"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* زر PDF */}
                 <div className="text-center mt-4">
                   <button
                     onClick={downloadPDF}
@@ -198,13 +273,32 @@ export default function StructureDesigner() {
         <svg ref={svgRef} viewBox="0 0 20 10" width="100%" height="100%" onClick={handleCanvasClick}>
           {/* Slabs */}
           {slabs.map((s) => (
-            <rect key={s.id} x={s.x} y={s.y - s.h} width={s.w} height={s.h} fill="lightblue" stroke="blue" strokeWidth={0.05} />
+            <rect
+              key={s.id}
+              x={s.x}
+              y={s.y - s.h}
+              width={s.w}
+              height={s.h}
+              fill="lightblue"
+              stroke="blue"
+              strokeWidth={0.05}
+            />
           ))}
           {/* Members */}
           {members.map((m) => {
             const n1 = nodes.find((n) => n.id === m.n1);
             const n2 = nodes.find((n) => n.id === m.n2);
-            return <line key={m.id} x1={n1.x} y1={n1.y} x2={n2.x} y2={n2.y} stroke="blue" strokeWidth={0.05} />;
+            return (
+              <line
+                key={m.id}
+                x1={n1.x}
+                y1={n1.y}
+                x2={n2.x}
+                y2={n2.y}
+                stroke="blue"
+                strokeWidth={0.05}
+              />
+            );
           })}
           {/* Nodes */}
           {nodes.map((n) => (
