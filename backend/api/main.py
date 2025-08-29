@@ -5,12 +5,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 
-# ✅ استيراد الراوترات
-from backend.auth.signup import router as signup_router
-from backend.auth.login import router as login_router
-from backend.auth.verify import router as verify_router
-from backend.auth.auth_utils import get_current_user
-from backend.db.db import init_db
+
 
 from .engine.load_combination import combine_loads
 from .engine.code_router import get_code_handler
@@ -31,13 +26,10 @@ from .engine import structure_router
 
 app = FastAPI()
 
-# ✅ إنشاء قاعدة البيانات عند التشغيل الأول
-init_db()
+
 
 # ✅ ربط الراوترات
-app.include_router(login_router)
-app.include_router(signup_router)
-app.include_router(verify_router) 
+ 
 app.include_router(structure_router.router, prefix="/api")
 
 # ✅ إعداد CORS
@@ -61,7 +53,7 @@ class PDFRequest(BaseModel):
 
 # ✅ حماية التحليل باستخدام JWT
 @app.post("/analyze")
-async def analyze_element(payload: AnalysisInput, user=Depends(get_current_user)):
+
     code = payload.code
     element_type = payload.element
     seismic_data = payload.seismic
@@ -117,10 +109,9 @@ async def analyze_element(payload: AnalysisInput, user=Depends(get_current_user)
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# ✅ PDF report (محمي بالتوكن زي التحليل)
+
 @app.post("/generate-pdf")
-async def generate_pdf_report(request: PDFRequest, user=Depends(get_current_user)):
-    try:
+
         filename = "report.pdf"
         combined_data = {
             **request.data,
@@ -133,10 +124,7 @@ async def generate_pdf_report(request: PDFRequest, user=Depends(get_current_user
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
 
-# ✅ بيانات المستخدم الحالي
-@app.get("/me")
-def get_me(user=Depends(get_current_user)):
-    return {"email": user.email, "created_at": user.created_at}
+
 
 # ✅ خدمة ملفات React (frontend/dist)
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")

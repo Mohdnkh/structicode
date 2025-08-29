@@ -2,29 +2,17 @@ import React from "react"
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import Home from "./pages/Home"
 import Analyzer from "./pages/Analyzer"
-import SignUp from "./pages/SignUp"
-import Login from "./pages/Login"
 import StructureDesigner from "./pages/StructureDesigner"   // ✅ جديد
 
-// ✅ فحص اذا المستخدم مسجل دخول (باستخدام access_token)
-const isAuthed = () => Boolean(localStorage.getItem("access_token"))
 
-// ✅ مكون لحماية الصفحات (ما يفتحها غير المسجلين)
-function PrivateRoute({ children }) {
-  return isAuthed() ? children : <Navigate to="/login" replace />
-}
 
-// ✅ مكون يمنع الدخول لصفحات login/signup اذا الشخص مسجل أصلاً
-function UnauthOnly({ children }) {
-  return isAuthed() ? <Navigate to="/analyze" replace /> : children
-}
+
 
 // ✅ صفحة البداية
 function HomeWrapper() {
   const navigate = useNavigate()
   const goStart = () => {
-    // ✅ دايمًا يطلب تسجيل الدخول، حتى لو في access_token
-    navigate("/login")
+  
   }
 
   return <Home onStart={goStart} />
