@@ -21,14 +21,6 @@ export default function Analyzer() {
   const [loading, setLoading] = useState(false)
   const [lastInput, setLastInput] = useState(null)
 
-  // ✅ تحقق من التوكن
-  useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      navigate('/login')
-    }
-  }, [])
-
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
   }, [i18n.language])
@@ -73,13 +65,9 @@ export default function Analyzer() {
     }
 
     try {
-      const token = localStorage.getItem('access_token')  // ✅
       const response = await fetch(`${API_BASE}/analyze`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`   // ✅
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
       const json = await response.json()
@@ -95,13 +83,9 @@ export default function Analyzer() {
   const downloadPDF = async () => {
     if (!lastInput || !result) return
     try {
-      const token = localStorage.getItem('access_token')  // ✅
       const res = await fetch(`${API_BASE}/generate-pdf`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`   // ✅
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { ...lastInput, code, element }, result })
       })
       const blob = await res.blob()

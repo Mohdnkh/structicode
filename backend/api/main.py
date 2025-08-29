@@ -1,11 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
-
-
 
 from .engine.load_combination import combine_loads
 from .engine.code_router import get_code_handler
@@ -26,10 +24,7 @@ from .engine import structure_router
 
 app = FastAPI()
 
-
-
-# ✅ ربط الراوترات
- 
+# ✅ ربط راوتر الهيكل
 app.include_router(structure_router.router, prefix="/api")
 
 # ✅ إعداد CORS
@@ -51,9 +46,9 @@ class PDFRequest(BaseModel):
     data: dict
     result: dict
 
-# ✅ حماية التحليل باستخدام JWT
+# ✅ تحليل العناصر (بدون JWT)
 @app.post("/analyze")
-
+async def analyze_element(payload: AnalysisInput):
     code = payload.code
     element_type = payload.element
     seismic_data = payload.seismic
@@ -109,9 +104,10 @@ class PDFRequest(BaseModel):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-
+# ✅ PDF report
 @app.post("/generate-pdf")
-
+async def generate_pdf_report(request: PDFRequest):
+    try:
         filename = "report.pdf"
         combined_data = {
             **request.data,
@@ -123,8 +119,6 @@ class PDFRequest(BaseModel):
     except Exception as e:
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
-
-
 
 # ✅ خدمة ملفات React (frontend/dist)
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
