@@ -1,10 +1,6 @@
 import React from "react"
 import { useTranslation } from "react-i18next"
 
-// لو الصور بمجلد src/assets لازم نعمل import
-// import bgImg from "../assets/background.png"
-// import logo from "../assets/logo-structicode.png"
-
 export default function Home({ onStart }) {
   const { t } = useTranslation()
 
@@ -12,7 +8,7 @@ export default function Home({ onStart }) {
     <div
       style={{
         minHeight: "100vh",
-        backgroundImage: 'url("/background.png")', // أو: `url(${bgImg})`
+        backgroundImage: 'url("/background.png")', // ✅ الصورة من public
         backgroundSize: "cover",
         backgroundPosition: "center",
         display: "flex",
@@ -25,7 +21,7 @@ export default function Home({ onStart }) {
     >
       {/* ✅ اللوجو */}
       <img
-        src="/logo-structicode.png" // أو: {logo}
+        src="/logo-structicode.png" // ✅ اللوجو من public
         alt="Structicode Logo"
         style={{ width: "160px", marginBottom: "20px" }}
       />
@@ -42,7 +38,7 @@ export default function Home({ onStart }) {
         {t("home.title")}
       </h1>
 
-      {/* ✅ الوصف (معدل ليستخدم subtitle بدل description) */}
+      {/* ✅ الوصف */}
       <p style={{ fontSize: "1.2rem", color: "#374151", marginBottom: "2rem" }}>
         {t("home.subtitle")}
       </p>

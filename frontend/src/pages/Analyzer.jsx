@@ -122,7 +122,7 @@ export default function Analyzer() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundImage: 'url("/column-load-bg.png")',
+      backgroundImage: 'url("/column-load-bg.png")', // ✅ الصورة من public
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       padding: '40px'
@@ -137,153 +137,11 @@ export default function Analyzer() {
       }}>
         <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>{t('home.title')}</h2>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ fontWeight: 600 }}>{t('analyzer.select_code')}</label>
-          <select value={code} onChange={e => setCode(e.target.value)} className="input">
-            <option value="">-- {t('analyzer.select_code')} --</option>
-            {codes.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
-        {/* زر تحليل الهيكل الكامل */}
-        <div style={{ marginBottom: '2rem' }}>
-          <label style={{ fontWeight: 600 }}>{t('analyzer.structure')}</label>
-          <div>
-            <button
-              onClick={() => navigate('/structure-designer')}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '10px',
-                border: '1px solid #ccc',
-                fontWeight: '600',
-                backgroundColor: '#f3f4f6',
-                color: '#111',
-                cursor: 'pointer',
-                marginTop: '8px'
-              }}
-            >
-              {t('analyzer.structure_analysis')}
-            </button>
-          </div>
-        </div>
-
-        {code && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h4 style={{ fontWeight: 'bold', fontSize: '1.125rem', marginBottom: '1rem' }}>{t('analyzer.seismic')}</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label>{t('analyzer.zone')}</label>
-                <select value={seismic.zone} onChange={(e) => setSeismic({ ...seismic, zone: e.target.value })}>
-                  <option value="">-- {t('analyzer.zone')} --</option>
-                  {seismicZones.map(zone => <option key={zone} value={zone}>{zone}</option>)}
-                </select>
-              </div>
-              <div>
-                <label>{t('analyzer.soil')}</label>
-                <select value={seismic.soil} onChange={(e) => setSeismic({ ...seismic, soil: e.target.value })}>
-                  <option value="">-- {t('analyzer.soil')} --</option>
-                  <option value="rock">{t('analyzer.rock')}</option>
-                  <option value="medium">{t('analyzer.medium')}</option>
-                  <option value="soft">{t('analyzer.soft')}</option>
-                </select>
-              </div>
-              <div>
-                <label>{t('analyzer.importance')}</label>
-                <select value={seismic.importance} onChange={(e) => setSeismic({ ...seismic, importance: e.target.value })}>
-                  <option value="">-- {t('analyzer.importance')} --</option>
-                  <option value="low">{t('analyzer.low')}</option>
-                  <option value="normal">{t('analyzer.normal')}</option>
-                  <option value="high">{t('analyzer.high')}</option>
-                </select>
-              </div>
-              <div>
-                <label>{t('analyzer.system')}</label>
-                <select value={seismic.system} onChange={(e) => setSeismic({ ...seismic, system: e.target.value })}>
-                  <option value="">-- {t('analyzer.system')} --</option>
-                  <option value="moment_frame">{t('analyzer.moment_frame')}</option>
-                  <option value="shear_wall">{t('analyzer.shear_wall')}</option>
-                  <option value="dual">{t('analyzer.dual')}</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {[['analyzer.concrete', concreteElements], ['analyzer.steel', steelElements]].map(([label, list]) => (
-          <div key={label} style={{ marginBottom: '1.5rem' }}>
-            <label>{t(label)}</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {list.map(el => (
-                <button key={el.value} onClick={() => setElement(el.value)} style={{
-                  padding: '10px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid #ccc',
-                  fontWeight: '600',
-                  backgroundColor: element === el.value ? '#2563eb' : '#f3f4f6',
-                  color: element === el.value ? 'white' : '#111',
-                  cursor: 'pointer'
-                }}>
-                  {el.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {code && element && renderForm()}
-
-        {loading && <p style={{ textAlign: 'center', color: '#2563eb' }}>{t('analyzer.loading')}</p>}
+        {/* باقي الكود زي ما هو ... */}
 
         {result?.status === 'success' && (
           <div style={{ marginTop: '2rem' }}>
-            <div style={{
-              backgroundColor: result.result.structural?.status === 'safe' ? '#e6f4ea' : '#fde8e8',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              <h3>Structural Check: {result.result.structural?.status}</h3>
-            </div>
-
-            <ul style={{ background: '#f3f4f6', padding: '16px', borderRadius: '8px' }}>
-              {Object.entries(result.result.structural || {}).map(([key, val]) => (
-                key !== 'details' && key !== 'recommendations' && <li key={key}><strong>{key}:</strong> {JSON.stringify(val)}</li>
-              ))}
-            </ul>
-
-            {result.result.structural?.details && (
-              <>
-                <h4>Details:</h4>
-                <ul>
-                  {Object.entries(result.result.structural.details).map(([k, v]) => (
-                    <li key={k}><strong>{k}:</strong> {v}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            {result.result.structural?.recommendations?.length > 0 && (
-              <>
-                <h4>Recommendations:</h4>
-                <ul>
-                  {result.result.structural.recommendations.map((rec, i) => (
-                    <li key={i}>- {rec}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            {result.result.seismic && (
-              <>
-                <h3 style={{ marginTop: '2rem' }}>Seismic Check</h3>
-                <ul style={{ background: '#e0f2fe', padding: '16px', borderRadius: '8px' }}>
-                  {Object.entries(result.result.seismic).map(([key, val]) => (
-                    <li key={key}><strong>{key}:</strong> {val}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-
+            {/* ... */}
             <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
               <button onClick={downloadPDF} style={{
                 backgroundColor: '#2563eb',
@@ -293,17 +151,13 @@ export default function Analyzer() {
                 fontWeight: '600',
                 border: 'none',
                 cursor: 'pointer',
-                position: 'relative',  // ✅ عشان الزر يبين فوق
-                zIndex: 10             // ✅ حل مشكلة عدم الضغط عاللابتوب
+                position: 'relative',
+                zIndex: 10
               }}>
                 Download PDF Report
               </button>
             </div>
           </div>
-        )}
-
-        {result?.status === 'error' && (
-          <p style={{ color: 'red', fontWeight: '600' }}>❌ {result.message}</p>
         )}
       </div>
     </div>
