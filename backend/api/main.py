@@ -5,19 +5,36 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 
-# ✅ استخدم import مطلق بدل ..
-from backend.utils.pdf_generator import generate_pdf
-from backend.engine import structure_router
-from backend.engine.load_combination import combine_loads
-from backend.engine.code_router import get_code_handler
-from backend.engine.seismic_router import get_seismic_handler
-from backend.engine.concrete.slab_solid import analyze_solid_slab
-from backend.engine.concrete.slab_hollow import analyze_hollow_slab
-from backend.engine.concrete.slab_waffle import analyze_waffle_slab
-from backend.engine.concrete.beam import analyze_concrete_beam
-from backend.engine.concrete.column import analyze_concrete_column
-from backend.engine.concrete.footing import analyze_concrete_footing
-from backend.engine.concrete.staircase import analyze_concrete_staircase
+# ✅ استيراد مرن (يشتغل محلي وعلى Railway)
+try:
+    from backend.utils.pdf_generator import generate_pdf
+except ModuleNotFoundError:
+    from utils.pdf_generator import generate_pdf
+
+try:
+    from backend.engine import structure_router
+    from backend.engine.load_combination import combine_loads
+    from backend.engine.code_router import get_code_handler
+    from backend.engine.seismic_router import get_seismic_handler
+    from backend.engine.concrete.slab_solid import analyze_solid_slab
+    from backend.engine.concrete.slab_hollow import analyze_hollow_slab
+    from backend.engine.concrete.slab_waffle import analyze_waffle_slab
+    from backend.engine.concrete.beam import analyze_concrete_beam
+    from backend.engine.concrete.column import analyze_concrete_column
+    from backend.engine.concrete.footing import analyze_concrete_footing
+    from backend.engine.concrete.staircase import analyze_concrete_staircase
+except ModuleNotFoundError:
+    from engine import structure_router
+    from engine.load_combination import combine_loads
+    from engine.code_router import get_code_handler
+    from engine.seismic_router import get_seismic_handler
+    from engine.concrete.slab_solid import analyze_solid_slab
+    from engine.concrete.slab_hollow import analyze_hollow_slab
+    from engine.concrete.slab_waffle import analyze_waffle_slab
+    from engine.concrete.beam import analyze_concrete_beam
+    from engine.concrete.column import analyze_concrete_column
+    from engine.concrete.footing import analyze_concrete_footing
+    from engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
@@ -108,6 +125,7 @@ async def generate_pdf_report(request: PDFRequest):
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
 
+# ✅ لخدمة ملفات React بعد الـ build
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
 @app.get("/{full_path:path}")
