@@ -5,8 +5,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 
-# ✅ استيرادات مطلقة (تعمل من جذر المشروع عبر Docker/Railway)
-from backend.utils.pdf_generator import generate_pdf
+# ✅ استيراد صحيح لمسار utils
+from backend.api.utils.pdf_generator import generate_pdf
 from backend.engine import structure_router
 from backend.engine.load_combination import combine_loads
 from backend.engine.code_router import get_code_handler
