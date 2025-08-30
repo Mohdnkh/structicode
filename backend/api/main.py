@@ -5,18 +5,19 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 
-from ..utils.pdf_generator import generate_pdf
-from ..engine import structure_router
-from ..engine.load_combination import combine_loads
-from ..engine.code_router import get_code_handler
-from ..engine.seismic_router import get_seismic_handler
-from ..engine.concrete.slab_solid import analyze_solid_slab
-from ..engine.concrete.slab_hollow import analyze_hollow_slab
-from ..engine.concrete.slab_waffle import analyze_waffle_slab
-from ..engine.concrete.beam import analyze_concrete_beam
-from ..engine.concrete.column import analyze_concrete_column
-from ..engine.concrete.footing import analyze_concrete_footing
-from ..engine.concrete.staircase import analyze_concrete_staircase
+# ✅ استخدم import مطلق بدل ..
+from backend.utils.pdf_generator import generate_pdf
+from backend.engine import structure_router
+from backend.engine.load_combination import combine_loads
+from backend.engine.code_router import get_code_handler
+from backend.engine.seismic_router import get_seismic_handler
+from backend.engine.concrete.slab_solid import analyze_solid_slab
+from backend.engine.concrete.slab_hollow import analyze_hollow_slab
+from backend.engine.concrete.slab_waffle import analyze_waffle_slab
+from backend.engine.concrete.beam import analyze_concrete_beam
+from backend.engine.concrete.column import analyze_concrete_column
+from backend.engine.concrete.footing import analyze_concrete_footing
+from backend.engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
