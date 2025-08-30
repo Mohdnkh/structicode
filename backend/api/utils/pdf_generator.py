@@ -51,19 +51,16 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.cell(0, 10, "2. Input Data", ln=True, fill=True)
     pdf.set_font("Arial", size=10)
 
-    # Nodes
     if data.get("nodes"):
         pdf.cell(0, 8, "Nodes:", ln=True)
         for n in data["nodes"]:
             pdf.cell(0, 8, f" - {n['id']}: (x={n['x']}, y={n['y']}), support={n['support']}", ln=True)
 
-    # Members
     if data.get("members"):
         pdf.cell(0, 8, "Members:", ln=True)
         for m in data["members"]:
             pdf.cell(0, 8, f" - {m['id']}: {m['n1']} → {m['n2']}, Section={m['sectionId']}, Material={m['materialId']}", ln=True)
 
-    # Slabs
     if data.get("slabs"):
         pdf.cell(0, 8, "Slabs:", ln=True)
         for s in data["slabs"]:
@@ -92,47 +89,33 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.cell(0, 10, "4. Structural Analysis Results", ln=True, fill=True)
     pdf.set_font("Arial", size=10)
 
-    combos = result if isinstance(result, dict) else result.get("results", {})
+    combos = {}
+    if "results" in result:
+        combos = result["results"]
+    elif "result" in result and "structural" in result["result"]:
+        combos = {"structural": result["result"]["structural"]}
+    else:
+        combos = result
 
     for combo, res in combos.items():
         pdf.set_font("Arial", "B", 11)
         pdf.cell(0, 8, f"Load Combination: {combo}", ln=True)
         pdf.set_font("Arial", size=10)
 
-        # --- Displacements
-        pdf.cell(0, 8, "Displacements:", ln=True)
-        for nid, disp in res.get("displacements", {}).items():
-            pdf.cell(0, 8, f" - Node {nid}: ux={disp['ux']:.4f} m, uy={disp['uy']:.4f} m, rz={disp['rz']:.4f} rad", ln=True)
+        if res.get("displacements"):
+            pdf.cell(0, 8, "Displacements:", ln=True)
+            for nid, disp in res["displacements"].items():
+                pdf.cell(0, 8, f" - Node {nid}: ux={disp['ux']:.4f}, uy={disp['uy']:.4f}, rz={disp['rz']:.4f}", ln=True)
 
-        # --- Member Forces
-        pdf.cell(0, 8, "Member Forces:", ln=True)
-        for mid, f in res.get("member_forces", {}).items():
-            pdf.cell(0, 8, f" - {mid}: Nmax={f['Nmax']:.2f} kN, Vmax={f['Vmax']:.2f} kN, Mmax={f['Mmax']:.2f} kNm", ln=True)
+        if res.get("member_forces"):
+            pdf.cell(0, 8, "Member Forces:", ln=True)
+            for mid, f in res["member_forces"].items():
+                pdf.cell(0, 8, f" - {mid}: Nmax={f['Nmax']:.2f}, Vmax={f['Vmax']:.2f}, Mmax={f['Mmax']:.2f}", ln=True)
 
-        # --- Design Calculations
         if "design" in res:
             pdf.cell(0, 8, "Design Checks:", ln=True)
             for mid, d in res["design"].items():
-                pdf.set_font("Arial", "B", 10)
-                pdf.cell(0, 8, f"  Member {mid}:", ln=True)
-                pdf.set_font("Arial", size=10)
-
-                # Flexure
-                pdf.multi_cell(0, 8, sanitize("   Flexural Check: φMn ≥ Mu"))
-                pdf.multi_cell(0, 8, sanitize(f"     Mu = {d['Mu']} kNm"))
-                pdf.multi_cell(0, 8, sanitize(f"     As_required = {d['As_required']} mm², As_provided = {d['As_provided']} mm²"))
-
-                # Shear
-                pdf.multi_cell(0, 8, sanitize("   Shear Check: φVc ≥ Vu"))
-                pdf.multi_cell(0, 8, sanitize(f"     Vu = {d['Vu']} kN, Status: {'OK' if d['Shear_OK'] else 'NG'}"))
-
-                # Axial
-                pdf.multi_cell(0, 8, sanitize("   Axial Check: φPn ≥ Nu"))
-                pdf.multi_cell(0, 8, sanitize(f"     Nu = {d['Nu']} kN, Status: {'OK' if d['Axial_OK'] else 'NG'}"))
-
-                # Overall
-                pdf.multi_cell(0, 8, sanitize(f"     → Overall: {'SAFE ✅' if d['Overall_OK'] else 'NOT SAFE ❌'}"))
-                pdf.ln(2)
+                pdf.cell(0, 8, f" - Member {mid}: Overall: {'SAFE ✅' if d['Overall_OK'] else 'NOT SAFE ❌'}", ln=True)
 
         pdf.ln(3)
 
@@ -143,14 +126,10 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "5. Recommendations", ln=True, fill=True)
     pdf.set_font("Arial", size=10)
-    pdf.multi_cell(0, 8, sanitize("• Verify detailing as per selected code provisions.\n"
-                                  "• Ensure minimum reinforcement and spacing rules are followed.\n"
-                                  "• Cross-check seismic parameters with local zoning maps.\n"
-                                  "• Review serviceability (deflection & crack width) limits."))
+    pdf.multi_cell(0, 8, sanitize("• Verify detailing as per code.\n• Ensure minimum reinforcement rules.\n• Review seismic parameters.\n• Check deflection & crack limits."))
 
-    # Save file
     output_dir = os.path.abspath("reports")
     os.makedirs(output_dir, exist_ok=True)
     full_path = os.path.join(output_dir, filename)
-    pdf.output(full_path)
+    pdf.output(full_path, "F")  # ✅ نكتب الملف فعلياً
     return full_path

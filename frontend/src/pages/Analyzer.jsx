@@ -88,7 +88,7 @@ export default function Analyzer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           data: { ...lastInput, code, element }, 
-          result: result.result   // ✅ نرسل فقط result الحقيقي
+          result: result.result
         })
       })
       if (!res.ok) throw new Error('Failed to generate PDF')
@@ -292,7 +292,9 @@ export default function Analyzer() {
                 borderRadius: '12px',
                 fontWeight: '600',
                 border: 'none',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                position: 'relative',  // ✅ عشان الزر يبين فوق
+                zIndex: 10             // ✅ حل مشكلة عدم الضغط عاللابتوب
               }}>
                 Download PDF Report
               </button>

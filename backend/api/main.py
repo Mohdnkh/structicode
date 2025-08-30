@@ -5,29 +5,23 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 
-from .engine.load_combination import combine_loads
-from .engine.code_router import get_code_handler
-from .engine.seismic_router import get_seismic_handler
-from .utils.pdf_generator import generate_pdf
-
-from .engine.concrete.slab_solid import analyze_solid_slab
-from .engine.concrete.slab_hollow import analyze_hollow_slab
-from .engine.concrete.slab_waffle import analyze_waffle_slab
-
-from .engine.concrete.beam import analyze_concrete_beam
-from .engine.concrete.column import analyze_concrete_column
-from .engine.concrete.footing import analyze_concrete_footing
-from .engine.concrete.staircase import analyze_concrete_staircase
-
-# ⬇️ استيراد الروتر الجديد
-from .engine import structure_router
+from ..utils.pdf_generator import generate_pdf
+from ..engine import structure_router
+from ..engine.load_combination import combine_loads
+from ..engine.code_router import get_code_handler
+from ..engine.seismic_router import get_seismic_handler
+from ..engine.concrete.slab_solid import analyze_solid_slab
+from ..engine.concrete.slab_hollow import analyze_hollow_slab
+from ..engine.concrete.slab_waffle import analyze_waffle_slab
+from ..engine.concrete.beam import analyze_concrete_beam
+from ..engine.concrete.column import analyze_concrete_column
+from ..engine.concrete.footing import analyze_concrete_footing
+from ..engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
 
-# ✅ ربط راوتر الهيكل
 app.include_router(structure_router.router, prefix="/api")
 
-# ✅ إعداد CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,7 +40,6 @@ class PDFRequest(BaseModel):
     data: dict
     result: dict
 
-# ✅ تحليل العناصر (بدون JWT)
 @app.post("/analyze")
 async def analyze_element(payload: AnalysisInput):
     code = payload.code
@@ -70,7 +63,6 @@ async def analyze_element(payload: AnalysisInput):
                 structural = analyze_waffle_slab(data)
             else:
                 return {"status": "error", "message": f"Unsupported slab type: {slab_type}"}
-
         elif element_type == "beam":
             structural = analyze_concrete_beam(data, code)
         elif element_type == "column":
@@ -93,7 +85,6 @@ async def analyze_element(payload: AnalysisInput):
 
         return {
             "status": "success",
-            "code": handler.get_code_info() if 'handler' in locals() and hasattr(handler, "get_code_info") else {},
             "element": element_type,
             "result": {
                 "structural": structural,
@@ -104,26 +95,20 @@ async def analyze_element(payload: AnalysisInput):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# ✅ PDF report
 @app.post("/generate-pdf")
 async def generate_pdf_report(request: PDFRequest):
     try:
         filename = "report.pdf"
-        combined_data = {
-            **request.data,
-            "code": request.data.get("code"),
-            "element": request.data.get("element")
-        }
-        path = generate_pdf(combined_data, request.result, filename)
-        return FileResponse(path, media_type='application/pdf', filename=filename)
+        path = generate_pdf(request.data, request.result, filename)
+        if not os.path.exists(path):
+            raise HTTPException(status_code=500, detail="PDF not generated")
+        return FileResponse(path, media_type="application/pdf", filename=filename)
     except Exception as e:
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
 
-# ✅ خدمة ملفات React (frontend/dist)
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
-# ✅ fallback لأي route → يرجّع index.html
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str, request: Request):
     index_path = os.path.join("frontend", "dist", "index.html")
