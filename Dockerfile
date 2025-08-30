@@ -1,26 +1,18 @@
-# ====== Stage 1: Build frontend ======
-FROM node:18 AS frontend-builder
+# 🐍 استخدم Python slim
+FROM python:3.11-slim
 
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
-
-# ====== Stage 2: Backend ======
-FROM python:3.11
-
+# اضبط مجلد العمل
 WORKDIR /app
 
-# انسخ المتطلبات
-COPY backend/requirements.txt .
+# انسخ requirements وثبتها
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# انسخ كود backend
-COPY backend/ ./backend
+# انسخ بقية المشروع
+COPY . .
 
-# انسخ frontend/dist من الستيج الأول
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+# افتح البورت
+EXPOSE 8000
 
-# شغل FastAPI
+# ✅ شغل uvicorn على backend.api.main
 CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
