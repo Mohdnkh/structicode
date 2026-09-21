@@ -120,10 +120,12 @@ class ASCode:
                     "Vu": round(Vu, 2),
                     "Nu": round(Nu, 2),
                     "As_required": round(As_req, 2),
-                    "As_provided": round(As_req * 1.2, 2),
+                    "As_provided": None,
+                    "Flexure_Check": "NOT_EVALUATED",
                     "Shear_OK": shear_ok,
                     "Axial_OK": axial_ok,
-                    "Overall_OK": shear_ok and axial_ok
+                    "Overall_OK": None,
+                    "Overall_Check": "NOT_EVALUATED"
                 }
 
             results[combo_id] = {

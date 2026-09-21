@@ -115,7 +115,7 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
         if "design" in res:
             pdf.cell(0, 8, "Design Checks:", ln=True)
             for mid, d in res["design"].items():
-                pdf.cell(0, 8, f" - Member {mid}: Overall: {'SAFE ✅' if d['Overall_OK'] else 'NOT SAFE ❌'}", ln=True)
+                pdf.cell(0, 8, f" - Member {mid}: Overall: NOT EVALUATED (legacy, unverified)", ln=True)
 
         pdf.ln(3)
 
