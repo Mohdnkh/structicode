@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
+from pathlib import Path
 
 # ✅ الاستيرادات من backend.api لأن utils و engine بداخل api
 from backend.api.utils.pdf_generator import generate_pdf
@@ -20,6 +21,8 @@ from backend.api.engine.concrete.footing import analyze_concrete_footing
 from backend.api.engine.concrete.staircase import analyze_concrete_staircase
 
 app = FastAPI()
+
+FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 app.include_router(structure_router.router, prefix="/api")
 
@@ -108,10 +111,18 @@ async def generate_pdf_report(request: PDFRequest):
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
 
-# ✅ لخدمة ملفات React بعد الـ build
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# Serve built frontend assets only when a local build exists.
+assets_dir = FRONTEND_DIST / "assets"
+if assets_dir.is_dir():
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str, request: Request):
-    index_path = os.path.join("frontend", "dist", "index.html")
+    index_path = FRONTEND_DIST / "index.html"
+    if not index_path.is_file():
+        raise HTTPException(status_code=404, detail="Frontend build not available")
     return FileResponse(index_path)

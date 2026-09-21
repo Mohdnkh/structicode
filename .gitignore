@@ -1,53 +1,42 @@
-# =========================
-# Python / FastAPI
-# =========================
+# Python and FastAPI
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.sqlite3
 *.db
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Virtual environments
 .venv/
 venv/
 ENV/
-# Reports / temporary files
-reports/
+# Generated reports and logs
+/reports/
+/backend/reports/*.pdf
+/backend/api/utils/DejaVuSans*.pkl
 *.log
 
-# =========================
-# Node.js / React (Vite)
-# =========================
+# Node.js and Vite
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
-# نرفع frontend/dist عشان Railway يستخدمه
-#dist/
+# Generated frontend build output
+/frontend/dist/
 
-# =========================
-# Environment & secrets
-# =========================
+# Environment and secrets
 .env
 .env.local
 .env.*.local
 
-# =========================
-# OS / Editor files
-# =========================
+# OS and editor files
 .DS_Store
 Thumbs.db
 *.swp
 *.swo
 .vscode/
 .idea/
-
-# =========================
-# Railway / Docker
-# =========================
-!Dockerfile
-!docker-compose.yml
-!railway.json
