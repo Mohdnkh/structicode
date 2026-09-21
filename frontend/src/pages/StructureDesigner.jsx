@@ -227,7 +227,7 @@ export default function StructureDesigner() {
                       <th className="border p-1">Vu</th>
                       <th className="border p-1">Nu</th>
                       <th className="border p-1">As_req</th>
-                      <th className="border p-1">Legacy flag</th>
+                      <th className="border p-1">Overall check</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -238,7 +238,7 @@ export default function StructureDesigner() {
                         <td className="border p-1">{d.Vu?.toFixed(2)}</td>
                         <td className="border p-1">{d.Nu?.toFixed(2)}</td>
                         <td className="border p-1">{d.As_required}</td>
-                        <td className="border p-1">{String(d.Overall_OK)}</td>
+                        <td className="border p-1">{d.Overall_Check ?? "NOT_EVALUATED"}</td>
                       </tr>
                     ))}
                   </tbody>
