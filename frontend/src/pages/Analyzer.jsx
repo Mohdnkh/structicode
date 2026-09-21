@@ -8,8 +8,7 @@ import FootingForm from '../components/FootingForm'
 import SteelColumnForm from '../components/SteelColumnForm'
 import SteelBeamForm from '../components/SteelBeamForm'
 import { useTranslation } from 'react-i18next'
-
-const API_BASE = import.meta.env.VITE_API_URL || ''
+import { analyzeElement, legacyPdf } from '../api/client'
 
 export default function Analyzer() {
   const { t, i18n } = useTranslation()
@@ -57,24 +56,12 @@ export default function Analyzer() {
     setResult(null)
     setLastInput(formData)
 
-    const payload = {
-      code,
-      element,
-      data: formData,
-      seismic: seismic.zone ? seismic : null
-    }
-
     try {
-      const response = await fetch(`${API_BASE}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      const json = await response.json()
+      const json = await analyzeElement({ code, element, formData, seismic })
       setResult(json)
     } catch (error) {
       console.error('Analyze Error:', error)
-      setResult({ status: 'error', message: 'Failed to analyze. Please check server connection.' })
+      setResult({ request_status: 'error', error: { message: error.message } })
     } finally {
       setLoading(false)
     }
@@ -83,16 +70,9 @@ export default function Analyzer() {
   const downloadPDF = async () => {
     if (!lastInput || !result) return
     try {
-      const res = await fetch(`${API_BASE}/generate-pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          data: { ...lastInput, code, element }, 
-          result: result.result
-        })
-      })
-      if (!res.ok) throw new Error('Failed to generate PDF')
-      const blob = await res.blob()
+      const blob = await legacyPdf(
+        { ...lastInput, code, element }, result.legacy_unverified.result
+      )
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -139,9 +119,10 @@ export default function Analyzer() {
 
         {/* باقي الكود زي ما هو ... */}
 
-        {result?.status === 'success' && (
+        {result?.request_status === 'success' && (
           <div style={{ marginTop: '2rem' }}>
             {/* ... */}
+            <p>Legacy calculation output is unverified.</p>
             <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
               <button onClick={downloadPDF} style={{
                 backgroundColor: '#2563eb',

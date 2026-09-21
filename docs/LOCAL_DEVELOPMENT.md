@@ -98,6 +98,14 @@ npm run build
 
 The build writes to `frontend/dist`. Installing dependencies and building are separate commands. `dist`, `node_modules`, `.venv`, Python bytecode, and generated reports are ignored by Git.
 
-## Current limits
+## P2 contract checks
 
-The Structure Designer request path `/structure/analyze` does not yet match the backend `/api/structure/analyze` route. API contract work belongs to P2. The existing structural calculations and report contents have not been verified by these local smoke tests. Deployment is outside P1 and remains reserved for P12.
+Install the separate development test requirements into the active virtual environment:
+
+```sh
+python -m pip install -r backend/requirements-dev.txt
+python -m pytest backend/tests -q
+node --test frontend/tests/api-adapters.test.mjs
+```
+
+The Structure Designer and Analyzer now use the versioned `/api/v1` analysis routes through the shared frontend client. See [API_CONTRACTS.md](API_CONTRACTS.md) and [UNIT_SYSTEM.md](UNIT_SYSTEM.md) for request units and trust semantics. The tests verify transport and normalization, not structural engineering accuracy. The Structure Designer still lacks support and load editing controls; its default all-free model is rejected by v1 validation. The existing report path remains a legacy compatibility route. Deployment is reserved for P12.

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
+import logging
 
 from .structure_analyzer import StructureAnalyzer
 from .code_router import get_code_handler
@@ -24,7 +25,7 @@ class Member(BaseModel):
     type: str = "beam"  # beam, column
     sectionId: str
     materialId: str
-    loads: Optional[List[Dict]] = []
+    loads: Optional[List[Dict]] = Field(default_factory=list)
 
 class Slab(BaseModel):
     id: str
@@ -77,7 +78,7 @@ def analyze_structure(structure: StructureModel):
             raise HTTPException(status_code=400, detail=f"Unsupported code: {code}")
 
         # ⬇️ توليد load combinations حسب الكود
-        structure_dict = structure.dict()
+        structure_dict = structure.model_dump()
         structure_dict["loads"]["combinations"] = generate_combinations(code)
 
         # ⬇️ استدعاء StructureAnalyzer
@@ -85,9 +86,9 @@ def analyze_structure(structure: StructureModel):
         raw_results = analyzer.analyze_combinations()
 
         # ⬇️ تمرير النتائج للهاندلر (checks لكل combo)
-        results = {}
-        for combo_id, combo_result in raw_results.items():
-            results[combo_id] = handler.analyze_structure(structure_dict, combo_result)
+        if not hasattr(handler, "analyze_structure"):
+            raise HTTPException(status_code=400, detail="Structure analysis is unsupported for this code family")
+        results = handler.analyze_structure(structure_dict, raw_results)
 
         return {
             "status": "success",
@@ -95,5 +96,8 @@ def analyze_structure(structure: StructureModel):
             "results": results
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        logging.getLogger(__name__).exception("Legacy structure analysis failed")
+        raise HTTPException(status_code=500, detail="Structure analysis failed")
