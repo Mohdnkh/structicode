@@ -3,7 +3,10 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import logging
 
-from .structure_analyzer import StructureAnalyzer
+from .structure_analyzer import (
+    SolverInputError, SolverNumericalError, StructureAnalyzer,
+    StructureUnstableError, UnsupportedSlabError,
+)
 from .code_router import get_code_handler
 from .load_combination import generate_combinations   # ⬅️ جديد
 
@@ -98,6 +101,15 @@ def analyze_structure(structure: StructureModel):
 
     except HTTPException:
         raise
+    except UnsupportedSlabError as exc:
+        raise HTTPException(status_code=400, detail={"code": exc.code, "message": str(exc)}) from exc
+    except StructureUnstableError as exc:
+        raise HTTPException(status_code=422, detail={"code": exc.code, "message": str(exc)}) from exc
+    except SolverInputError as exc:
+        raise HTTPException(status_code=422, detail={"code": exc.code, "message": str(exc)}) from exc
+    except SolverNumericalError as exc:
+        logging.getLogger(__name__).exception("Frame solver numerical failure")
+        raise HTTPException(status_code=500, detail="Structure analysis failed") from exc
     except Exception:
         logging.getLogger(__name__).exception("Legacy structure analysis failed")
         raise HTTPException(status_code=500, detail="Structure analysis failed")
