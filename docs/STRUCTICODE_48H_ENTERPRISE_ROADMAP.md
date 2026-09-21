@@ -25,6 +25,8 @@ Convert the current prototype into a reliable, testable, traceable engineering p
 - No engineering calculation may return an authoritative SAFE/UNSAFE verdict when required inputs, code provisions, unit definitions, or validation evidence are incomplete. Use NOT VERIFIED, NOT EVALUATED, or INCOMPLETE instead.
 - Calculation sources must be authoritative and versioned. Each verified module must record the applicable standard edition, assumptions, units, references, and benchmark evidence.
 - If a phase uncovers a critical defect that invalidates later work, the phase may be marked BLOCKED and the defect must be resolved before continuing.
+- A phase deferred because an authoritative external source or license is unavailable does not automatically freeze unrelated later phases. Later work may proceed only when the blocker is external rather than an unresolved software defect that invalidates later calculations, known safety-critical misleading behavior from the deferred phase has been contained, and the next phase does not technically depend on the missing verified capability. The deferred exit gate remains unmet. Product acceptance and deployment must not treat the deferred phase as complete.
+- Before P11 or P12 can be completed, every deferred engineering phase must be completed and verified, intentionally removed from release scope, or retained as explicitly UNVERIFIED / NOT IMPLEMENTED with consistent product, UI, and report claims. A deferred capability cannot silently become a release-ready verified capability.
 
 ### Phase Branch Workflow (P3 onward)
 
@@ -45,6 +47,7 @@ Convert the current prototype into a reliable, testable, traceable engineering p
 | APPROVED | Reviewer | Phase changes and evidence have passed review; not yet pushed. |
 | PUSHED | Reviewer / Git owner | Approved phase has been committed and pushed to the repository. |
 | BLOCKED | Codex or Reviewer | A critical dependency or defect prevents safe continuation. |
+| DEFERRED — SOURCE BLOCKED | Reviewer / Git owner | Planned verified scope remains incomplete because an authoritative external source or license is unavailable. Safety-critical findings must be contained; technically independent later phases may proceed under the execution rules. The deferred exit gate must be revisited before product acceptance or release. |
 
 ## Master Execution Tracker
 
@@ -56,8 +59,8 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 | P1 | Local Development & Reproducible Build | 2-5 h | PUSHED | - | - |
 | P2 | API Contracts & Unit System Foundation | 5-9 h | PUSHED | - | - |
 | P3 | Structural Solver Stabilization | 9-14 h | PUSHED | - | - |
-| P4 | Verified Concrete Core | 14-20 h | BLOCKED | - | Authoritative ACI CODE-318-25 flexural provisions unavailable. |
-| P5 | Verified Steel Core | 20-25 h | HOLD | - | - |
+| P4 | Verified Concrete Core | 14-20 h | DEFERRED — SOURCE BLOCKED | - | Verified ACI CODE-318-25 core not implemented; authorized source access required. P4 safety remediation merged. No concrete capability promoted to VERIFIED. |
+| P5 | Verified Steel Core | 20-25 h | HOLD | - | Eligible to start after source-blocked recovery is reviewed and merged; P4 verified concrete remains deferred. |
 | P6 | Design-Code Registry & International Architecture | 25-29 h | HOLD | - | - |
 | P7 | Engineering Reports & Traceability | 29-33 h | HOLD | - | - |
 | P8 | Enterprise UI/UX & Engineering Workspace | 33-39 h | HOLD | - | - |
@@ -151,6 +154,8 @@ Objective: Replace generic concrete checks with a traceable, validated concrete-
 - Add benchmark examples, edge cases, invalid-input tests, and regression tests for every calculation considered verified.
 
 Exit gate: At least one concrete design path is end-to-end verified with source/edition metadata, unit proofs, benchmark tests, and truthful capability states for everything outside that verified scope.
+
+Restart condition: Resume verified P4 work only when authorized access to the applicable SI content of ACI CODE-318-25, or authorized ACI 318 PLUS access covering that edition, permits checking the exact provisions, equations, tables, limits, strength-reduction rules, and detailing requirements for the intended implementation. The P4 exit gate remains unmet until the verified work and evidence are complete.
 
 ## P5 - Verified Steel Core
 
@@ -257,6 +262,7 @@ Objective: Freeze the repaired product candidate and confirm that documentation,
 - Execute a clean-start acceptance run from a fresh checkout using documented local commands.
 - Run representative element and structure workflows from UI input through calculation, visualization, persistence where implemented, and report export.
 - Verify every visible design code and element type against its declared capability state.
+- Resolve every deferred engineering phase by verifying it, intentionally excluding it from release scope, or consistently declaring its remaining capability UNVERIFIED / NOT IMPLEMENTED across product, UI, and reports.
 - Prepare architecture, local development, calculation-engine, code-registry, validation, and known-limitations documentation.
 - Prepare a release checklist covering tests, migrations, environment variables, backups, observability, security, and rollback requirements.
 - Remove temporary debug code, stale generated files, dead UI controls, and contradictory documentation.
@@ -274,6 +280,7 @@ Objective: Decide where and how to publish only after all engineering and produc
 - Create production-ready build artifacts/configuration without weakening the local development workflow.
 - Prepare health checks, rollback procedure, environment configuration, database backup/restore procedure, and release verification steps.
 - Perform deployment only after explicit approval; otherwise stop with a deployment-ready package and documented provider options.
+- Before a deployment decision, confirm that no deferred engineering capability is presented as verified or silently counted toward a completed exit gate.
 - After any deployment, run the same acceptance smoke tests against the deployed environment and record the release version.
 
 Exit gate: A documented go/no-go decision exists. If approved, the release is deployed with rollback and verification controls; if not approved, the project remains safely runnable locally with a complete deployment package.
