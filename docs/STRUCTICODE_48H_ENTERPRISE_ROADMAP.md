@@ -53,7 +53,7 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 | --- | --- | --- | --- | --- | --- |
 | P0 | Repository Safety & Baseline | 0-2 h | PUSHED | - | - |
 | P1 | Local Development & Reproducible Build | 2-5 h | PUSHED | - | - |
-| P2 | API Contracts & Unit System Foundation | 5-9 h | READY FOR REVIEW | - | - |
+| P2 | API Contracts & Unit System Foundation | 5-9 h | PUSHED | - | - |
 | P3 | Structural Solver Stabilization | 9-14 h | HOLD | - | - |
 | P4 | Verified Concrete Core | 14-20 h | HOLD | - | - |
 | P5 | Verified Steel Core | 20-25 h | HOLD | - | - |
