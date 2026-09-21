@@ -44,7 +44,7 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 
 | Phase | Name | Time Box | Status | Review / Commit | Notes |
 | --- | --- | --- | --- | --- | --- |
-| P0 | Repository Safety & Baseline | 0-2 h | READY FOR REVIEW | - | - |
+| P0 | Repository Safety & Baseline | 0-2 h | PUSHED | - | - |
 | P1 | Local Development & Reproducible Build | 2-5 h | HOLD | - | - |
 | P2 | API Contracts & Unit System Foundation | 5-9 h | HOLD | - | - |
 | P3 | Structural Solver Stabilization | 9-14 h | HOLD | - | - |
