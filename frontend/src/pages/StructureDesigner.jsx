@@ -1,22 +1,20 @@
 import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import axios from "axios";
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
+import { analyzeStructure as analyzeStructureApi, legacyPdf } from "../api/client";
 
 // الأكواد المدعومة (متوافقة مع أسماء الـ backend)
 const codes = [
-  { id: "ACI", name: "ACI 318-19 (USA)" },
-  { id: "AS", name: "AS 3600/4100 (Australia)" },
-  { id: "BS", name: "BS 8110/5950 (UK)" },
-  { id: "CSA", name: "CSA A23.3 / S16 (Canada)" },
-  { id: "Eurocode", name: "Eurocode 2 & 3 (Europe)" },
-  { id: "Jordan", name: "Jordanian Code" },
-  { id: "Turkey", name: "Turkish Code" },
-  { id: "UAE", name: "UAE Code" },
-  { id: "Saudi", name: "Saudi Code" },
-  { id: "Egypt", name: "Egyptian Code" },
-  { id: "IS", name: "Indian Standards" },
+  { id: "ACI", name: "ACI family (legacy, unverified)" },
+  { id: "AS", name: "AS family (legacy, unverified)" },
+  { id: "BS", name: "BS family (legacy, unverified)" },
+  { id: "CSA", name: "CSA family (legacy, unverified)" },
+  { id: "Eurocode", name: "Eurocode family (legacy, unverified)" },
+  { id: "Jordan", name: "Jordan family (legacy, unverified)" },
+  { id: "Turkey", name: "Turkey family (legacy, unverified)" },
+  { id: "UAE", name: "UAE family (legacy, unverified)" },
+  { id: "Saudi", name: "Saudi family (legacy, unverified)" },
+  { id: "Egypt", name: "Egypt family (legacy, unverified)" },
+  { id: "IS", name: "IS family (legacy, unverified)" },
 ];
 
 export default function StructureDesigner() {
@@ -31,6 +29,7 @@ export default function StructureDesigner() {
   const [activeCombo, setActiveCombo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [warnings, setWarnings] = useState([]);
 
   const [drawingMember, setDrawingMember] = useState(null);
   const [lastPayload, setLastPayload] = useState(null);
@@ -85,13 +84,14 @@ export default function StructureDesigner() {
         loads: { combinations: [] },
       };
 
-      const res = await axios.post(`${API_BASE}/structure/analyze`, payload);
+      const response = await analyzeStructureApi(payload);
 
       setLastPayload(payload);
-      setAnalysisResult(res.data.results);
-      setActiveCombo(Object.keys(res.data.results)[0] || null);
+      setAnalysisResult(response.legacy_unverified.results);
+      setWarnings(response.warnings);
+      setActiveCombo(Object.keys(response.legacy_unverified.results)[0] || null);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -103,17 +103,7 @@ export default function StructureDesigner() {
   const downloadPDF = async () => {
     if (!lastPayload || !analysisResult) return;
     try {
-      const res = await fetch(`${API_BASE}/generate-pdf`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          data: lastPayload,
-          result: { results: analysisResult } // ✅ نغلفها بالطريقة الصحيحة
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed to generate PDF");
-      const blob = await res.blob();
+      const blob = await legacyPdf(lastPayload, { results: analysisResult });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -158,11 +148,12 @@ export default function StructureDesigner() {
             {loading ? "Analyzing..." : "Analyze Structure"}
           </button>
           {error && <p className="text-red-600 mt-2">{error}</p>}
+          {warnings.map((warning) => <p key={warning} className="text-amber-800 mt-2">{warning}</p>)}
         </motion.div>
 
         {analysisResult && (
           <motion.div layout className="bg-white rounded-2xl shadow p-4 overflow-auto max-h-[50vh]">
-            <h2 className="text-xl font-semibold mb-2">Results</h2>
+            <h2 className="text-xl font-semibold mb-2">Legacy results (unverified)</h2>
             {/* تبويبات لكل Combination */}
             <div className="flex gap-2 mb-3 flex-wrap">
               {Object.keys(analysisResult).map((combo) => (
@@ -227,7 +218,7 @@ export default function StructureDesigner() {
                 </table>
 
                 {/* Design Checks */}
-                <h4 className="font-medium mt-3">Design Checks</h4>
+                <h4 className="font-medium mt-3">Legacy design output (unverified)</h4>
                 <table className="w-full text-xs border mt-1">
                   <thead className="bg-gray-100">
                     <tr>
@@ -236,7 +227,7 @@ export default function StructureDesigner() {
                       <th className="border p-1">Vu</th>
                       <th className="border p-1">Nu</th>
                       <th className="border p-1">As_req</th>
-                      <th className="border p-1">OK</th>
+                      <th className="border p-1">Legacy flag</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -247,7 +238,7 @@ export default function StructureDesigner() {
                         <td className="border p-1">{d.Vu?.toFixed(2)}</td>
                         <td className="border p-1">{d.Nu?.toFixed(2)}</td>
                         <td className="border p-1">{d.As_required}</td>
-                        <td className="border p-1">{d.Overall_OK ? "✅" : "❌"}</td>
+                        <td className="border p-1">{String(d.Overall_OK)}</td>
                       </tr>
                     ))}
                   </tbody>

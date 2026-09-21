@@ -1,9 +1,13 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
+from pathlib import Path
 
 # ✅ الاستيرادات من backend.api لأن utils و engine بداخل api
 from backend.api.utils.pdf_generator import generate_pdf
@@ -18,10 +22,50 @@ from backend.api.engine.concrete.beam import analyze_concrete_beam
 from backend.api.engine.concrete.column import analyze_concrete_column
 from backend.api.engine.concrete.footing import analyze_concrete_footing
 from backend.api.engine.concrete.staircase import analyze_concrete_staircase
+from backend.api import v1
+from backend.api.domain.schemas import ErrorBody, ErrorEnvelope, ValidationDetail, VerificationStatus
 
 app = FastAPI()
 
+FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
 app.include_router(structure_router.router, prefix="/api")
+app.include_router(v1.router)
+
+
+@app.exception_handler(v1.ContractError)
+async def v1_contract_error(request: Request, exc: v1.ContractError):
+    body = ErrorEnvelope(
+        verification_status=exc.verification_status,
+        error=ErrorBody(code=exc.code, message=exc.message),
+    )
+    return JSONResponse(status_code=exc.status_code, content=body.model_dump(mode="json"))
+
+
+@app.exception_handler(RequestValidationError)
+async def v1_validation_error(request: Request, exc: RequestValidationError):
+    if not request.url.path.startswith("/api/v1/"):
+        return await request_validation_exception_handler(request, exc)
+    details = [ValidationDetail(
+        field=".".join(map(str, error["loc"])), message=error["msg"],
+    ) for error in exc.errors()]
+    body = ErrorEnvelope(
+        verification_status=VerificationStatus.NOT_EVALUATED,
+        error=ErrorBody(code="VALIDATION_ERROR", message="Request validation failed", details=details),
+    )
+    return JSONResponse(status_code=422, content=body.model_dump(mode="json"))
+
+
+@app.exception_handler(StarletteHTTPException)
+async def v1_http_error(request: Request, exc: StarletteHTTPException):
+    if not request.url.path.startswith("/api/v1/"):
+        return await http_exception_handler(request, exc)
+    body = ErrorEnvelope(
+        verification_status=VerificationStatus.NOT_EVALUATED,
+        error=ErrorBody(code="NOT_FOUND" if exc.status_code == 404 else "HTTP_ERROR",
+                        message="API route not found" if exc.status_code == 404 else "Request failed"),
+    )
+    return JSONResponse(status_code=exc.status_code, content=body.model_dump(mode="json"))
 
 app.add_middleware(
     CORSMiddleware,
@@ -108,10 +152,20 @@ async def generate_pdf_report(request: PDFRequest):
         print("PDF generation failed:", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
 
-# ✅ لخدمة ملفات React بعد الـ build
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# Serve built frontend assets only when a local build exists.
+assets_dir = FRONTEND_DIST / "assets"
+if assets_dir.is_dir():
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str, request: Request):
-    index_path = os.path.join("frontend", "dist", "index.html")
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API route not found")
+    index_path = FRONTEND_DIST / "index.html"
+    if not index_path.is_file():
+        raise HTTPException(status_code=404, detail="Frontend build not available")
     return FileResponse(index_path)
