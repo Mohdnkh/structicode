@@ -13,6 +13,18 @@ The local FastAPI server exposes `POST /api/v1/analysis/element` and `POST /api/
 
 Code-family input is case insensitive, and the historical support spelling `fix` maps to `fixed`. The family identifiers name legacy routing choices, not verified design-code editions. P6 owns the formal edition and capability registry. Unsupported family/element combinations and variants return structured errors instead of a fabricated calculation.
 
+### Temporary legacy routing capability
+
+`backend/api/legacy_capabilities.py` records only whether a software dispatch path exists for the current v1 adapter. It is not the P6 design-code registry and does not establish engineering validity.
+
+| Legacy family IDs | Concrete elements | Steel elements | Structure analysis |
+| --- | --- | --- | --- |
+| `aci`, `bs`, `eurocode`, `as`, `csa`, `jordan`, `egypt`, `saudi`, `uae`, `turkey` | Beam, column, slab, footing, staircase | Steel beam, steel column | Legacy path exists |
+| `is` | Beam, column, slab, footing, staircase | Not implemented | Legacy path exists |
+| `steel` | Not implemented | Steel beam, steel column | Not implemented |
+
+Unsupported family/element combinations return HTTP 400 with `NOT_IMPLEMENTED` before invoking a legacy engine. An explicit legacy handler refusal is also mapped to that outcome. A genuine calculation or runtime failure remains HTTP 500 with `ENGINE_FAILURE` and `NOT_EVALUATED`. A successful legacy path always remains `UNVERIFIED`. The AS steel handler's missing imports were repaired without changing its calculations; IS continues to expose concrete paths only.
+
 ## Element request
 
 The body has a normalized `code_id`, a discriminated `input` object, and optional `seismic`. Seismic input is rejected as `NOT_IMPLEMENTED` until a verified path exists.
@@ -37,6 +49,8 @@ The body has a normalized `code_id`, a discriminated `input` object, and optiona
 ```
 
 The `kind` discriminator selects a concrete beam, concrete column, slab, footing, staircase, steel beam, or steel column schema. Variant fields are explicit: for example `slab_type`, `block_height_cm`, `rib_width_cm`, and `rib_spacing_cm`. Steel beam span is **`span_mm`**, matching its current form label. Column forces use `axial_force_kn` and `moment_kn_m`. Each model and its optional/default fields are specified in `backend/api/domain/schemas.py` and the generated OpenAPI schema.
+
+Element-only `axial_force_kn` fields for concrete columns, footings, and steel columns are nonnegative **magnitudes** under the current legacy form/engine convention. P2 defines no compression/tension sign convention for those paths. Structure member line loads and the concrete-column moment field accept finite signed values. Engineering sign semantics belong to the applicable later calculation phase.
 
 Successful element response shape:
 

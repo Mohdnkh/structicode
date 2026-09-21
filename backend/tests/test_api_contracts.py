@@ -254,6 +254,69 @@ def test_structure_unsupported_family_has_structured_400():
     assert response.json()["verification_status"] == "NOT_IMPLEMENTED"
 
 
+@pytest.mark.parametrize("family", list(DesignCode))
+def test_structure_family_capability_matrix(family):
+    response = client.post("/api/v1/analysis/structure", json=structure_payload(family.value))
+    unsupported = family == DesignCode.STEEL
+    assert response.status_code == (400 if unsupported else 200), response.text
+    assert response.json()["verification_status"] == (
+        "NOT_IMPLEMENTED" if unsupported else "UNVERIFIED"
+    )
+
+
+@pytest.mark.parametrize("family", list(DesignCode))
+@pytest.mark.parametrize("element", ["beam", "steel_beam", "steel_column"])
+def test_family_element_capability_matrix(family, element):
+    unsupported = (
+        (family == DesignCode.STEEL and element == "beam")
+        or (family == DesignCode.IS and element in ("steel_beam", "steel_column"))
+    )
+    response = client.post("/api/v1/analysis/element", json={
+        "code_id": family.value, "input": dict(ELEMENT_INPUTS)[element],
+    })
+    assert response.status_code == (400 if unsupported else 200), response.text
+    body = response.json()
+    assert body["request_status"] == ("error" if unsupported else "success")
+    assert body["verification_status"] == ("NOT_IMPLEMENTED" if unsupported else "UNVERIFIED")
+    if unsupported:
+        assert body["error"]["code"] == "NOT_IMPLEMENTED"
+    else:
+        assert body["legacy_unverified"]["result"]
+
+
+def test_as_steel_beam_import_wiring_is_callable():
+    response = client.post("/api/v1/analysis/element", json={
+        "code_id": "as", "input": dict(ELEMENT_INPUTS)["steel_beam"],
+    })
+    assert response.status_code == 200, response.text
+    assert response.json()["verification_status"] == "UNVERIFIED"
+
+
+@pytest.mark.parametrize("element", ["steel_beam", "steel_column"])
+def test_is_steel_paths_are_not_implemented_not_engine_failures(element):
+    response = client.post("/api/v1/analysis/element", json={
+        "code_id": "is", "input": dict(ELEMENT_INPUTS)[element],
+    })
+    assert response.status_code == 400, response.text
+    assert response.json()["verification_status"] == "NOT_IMPLEMENTED"
+
+
+@pytest.mark.parametrize("legacy_result,expected_status,expected_code", [
+    ({"status": "error", "message": "Unsupported element type 'steel_beam' for IS code."}, 400, "NOT_IMPLEMENTED"),
+    ({"status": "not_implemented", "message": "No path"}, 400, "NOT_IMPLEMENTED"),
+    ({"status": "error", "message": "Calculation failed"}, 500, "ENGINE_FAILURE"),
+])
+def test_explicit_legacy_refusal_is_distinct_from_engine_error(
+    monkeypatch, legacy_result, expected_status, expected_code,
+):
+    monkeypatch.setattr("backend.api.v1._legacy_element_result", lambda *_: legacy_result)
+    response = client.post("/api/v1/analysis/element", json={
+        "code_id": "aci", "input": dict(ELEMENT_INPUTS)["beam"],
+    })
+    assert response.status_code == expected_status
+    assert response.json()["error"]["code"] == expected_code
+
+
 @pytest.mark.parametrize("code", list(DesignCode))
 def test_code_family_lookup_is_case_independent(code):
     assert get_code_handler(code.value) is not None

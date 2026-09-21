@@ -5,7 +5,8 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from .domain.identifiers import DesignCode, LEGACY_CODE_NAMES
+from .domain.identifiers import DesignCode, ElementId, LEGACY_CODE_NAMES
+from .legacy_capabilities import supports_element, supports_structure
 from .domain.legacy_adapters import (
     element_to_legacy, normalize_element, normalize_structure, structure_to_legacy,
 )
@@ -47,6 +48,20 @@ def _unsupported(message: str) -> ContractError:
     return ContractError("NOT_IMPLEMENTED", message, 400, VerificationStatus.NOT_IMPLEMENTED)
 
 
+def _legacy_unsupported_element(result: dict) -> bool:
+    """Recognize only explicit legacy dispatch refusals, not calculation errors."""
+    if result.get("status") == "not_implemented":
+        return True
+    if result.get("status") != "error" or not isinstance(result.get("message"), str):
+        return False
+    message = result["message"]
+    return message.startswith("Unsupported element type: ") or (
+        message.startswith("Unsupported element type '") and message.endswith(" for IS code.")
+    ) or (
+        message.startswith("Element '") and message.endswith("not supported in steel analysis")
+    )
+
+
 def _plain(value: Any) -> Any:
     """Convert NumPy scalar outputs without interpreting legacy check values."""
     if isinstance(value, dict):
@@ -86,8 +101,8 @@ def analyze_element_v1(request: ElementRequest):
     value = request.input
     if request.seismic is not None:
         raise _unsupported("Seismic analysis is not implemented in the v1 contract")
-    if request.code_id == DesignCode.STEEL and value.kind not in ("steel_beam", "steel_column"):
-        raise _unsupported("The steel family does not implement concrete elements")
+    if not supports_element(request.code_id, ElementId(value.kind)):
+        raise _unsupported(f"The {request.code_id.value} family has no legacy {value.kind} analysis path")
     if value.kind == "beam" and value.beam_type == "prestressed":
         raise _unsupported("Prestressed beam analysis is not implemented")
     if isinstance(value, ColumnInput) and value.column_type != "rectangular":
@@ -118,11 +133,11 @@ def analyze_element_v1(request: ElementRequest):
         logger.exception("Legacy element engine failed")
         raise ContractError("ENGINE_FAILURE", "Analysis could not be completed", 500) from exc
 
+    if isinstance(legacy_result, dict) and _legacy_unsupported_element(legacy_result):
+        raise _unsupported("The legacy handler does not implement this element")
     if not isinstance(legacy_result, dict) or "error" in legacy_result or legacy_result.get("status") == "error":
         logger.error("Legacy element engine returned an error: %r", legacy_result)
         raise ContractError("ENGINE_FAILURE", "Analysis could not be completed", 500)
-    if legacy_result.get("status") == "not_implemented":
-        raise _unsupported("This element variant is not implemented by the legacy engine")
 
     warnings = ["Legacy calculation output has not been independently verified."]
     if isinstance(value, ColumnInput) and value.moment_kn_m:
@@ -143,8 +158,8 @@ def analyze_element_v1(request: ElementRequest):
 
 @router.post("/structure", response_model=StructureResponse)
 def analyze_structure_v1(request: StructureRequest):
-    if request.code_id == DesignCode.STEEL:
-        raise _unsupported("The steel family has no structure-level legacy handler")
+    if not supports_structure(request.code_id):
+        raise _unsupported(f"The {request.code_id.value} family has no structure-level legacy analysis path")
     if any(section.inertia_mm4 is not None for section in request.sections):
         raise _unsupported("The legacy frame solver does not consume an explicit section inertia")
 

@@ -56,7 +56,7 @@ Run commands from the repository root, with `.venv` active for Python-backed npm
 | `npm ci` | Passed; 132 packages installed; audit reports four advisories |
 | `npm run build` | Passed; Vite 5.4.21, 469 modules transformed, output `frontend/dist` |
 | `npm run verify:backend` with `.venv` on PATH | Passed |
-| `.\.venv\Scripts\python.exe -m pytest backend/tests -q` | Passed; 59 tests (22 unit, 37 API contract) |
+| `.\.venv\Scripts\python.exe -m pytest backend/tests -q` | Passed; 113 tests after targeted capability rework |
 | `node --test frontend/tests/api-adapters.test.mjs` | Passed; 3 tests |
 | Live `GET http://127.0.0.1:8000/health` | HTTP 200, `{"status":"ok"}` |
 | Live valid `POST /api/v1/analysis/element` | HTTP 200, success/UNVERIFIED, canonical input and `legacy_unverified` |
@@ -81,3 +81,13 @@ Run commands from the repository root, with `.venv` active for Python-backed npm
 - **P8:** Analyzer form visibility and results usability, Structure Designer support/load editing, and broader UI workflow. The current designer creates free nodes and cannot produce a supported model solely through its current controls.
 
 Legacy `/analyze` and `/api/structure/analyze` retain historical response shapes. They are documented compatibility paths; v1 is the new analysis contract. No structural calculation should be treated as engineering-verified from this phase's transport tests.
+
+## Independent Review Rework — Legacy Capability Routing
+
+Independent review found that valid typed `is` steel-beam/column requests reached an explicit concrete-only refusal but were reported as HTTP 500 `ENGINE_FAILURE`. The AS handler advertised steel paths but lacked imports for its existing steel engine functions, also producing HTTP 500. The pre-correction 12-family × 3-element matrix had four such HTTP 500 cells.
+
+The temporary `backend/api/legacy_capabilities.py` map now gates the existing software paths: ten mixed families have concrete and steel element paths plus structure analysis; `is` has concrete elements and structure analysis but no steel elements; `steel` has steel elements only. This routing inventory is not a design-code edition registry or a verification claim. Unsupported paths return HTTP 400 `NOT_IMPLEMENTED`. The v1 adapter also recognizes explicit legacy unsupported-element results; other calculation errors remain HTTP 500 `ENGINE_FAILURE` with `NOT_EVALUATED`.
+
+`backend/api/codes/as_code.py` gained only the two missing steel function imports. The existing AS steel paths now execute and remain `UNVERIFIED`; no steel equation or coefficient changed. `ISCode` remains concrete-only and was not modified. `steel + structure` remains HTTP 400 `NOT_IMPLEMENTED`.
+
+The parameterized element matrix covers all 12 current family IDs against concrete beam, steel beam, and steel column: **36 requests, 33 HTTP 200/UNVERIFIED and 3 HTTP 400/NOT_IMPLEMENTED; no HTTP 500**. A second 12-family structure matrix confirms 11 HTTP 200/UNVERIFIED paths and one HTTP 400/NOT_IMPLEMENTED steel path. The full backend suite has **113 passing tests**, including the original seven element schemas, explicit AS and IS regressions, steel structure rejection, and checks that a legacy refusal is distinct from a genuine engine error. The optional input-sign review found intentional nonnegative axial-force magnitude fields for concrete columns, footings, and steel columns; P2 does not define a compression/tension sign convention. Structure member line loads and concrete-column moment are finite signed fields.
