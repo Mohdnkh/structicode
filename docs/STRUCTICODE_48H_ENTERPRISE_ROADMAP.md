@@ -26,12 +26,13 @@ Convert the current prototype into a reliable, testable, traceable engineering p
 - Calculation sources must be authoritative and versioned. Each verified module must record the applicable standard edition, assumptions, units, references, and benchmark evidence.
 - If a phase uncovers a critical defect that invalidates later work, the phase may be marked BLOCKED and the defect must be resolved before continuing.
 
-### Phase Branch Workflow (P2 onward)
+### Phase Branch Workflow (P3 onward)
 
-- Use one branch per phase. Commit and push the phase branch for independent review of its GitHub diff.
-- Pushing a review branch leaves that phase at READY FOR REVIEW; Codex may not mark it PUSHED.
-- Only after independent approval and an explicitly authorized merge into `codex/48h-enterprise-remediation` may the phase become PUSHED.
-- Keep `main` untouched throughout P2-P11.
+- Start each phase from current `main` and use one dedicated phase branch.
+- Codex commits and pushes only the phase branch, then opens a pull request directly into `main`.
+- The phase remains READY FOR REVIEW while the pull request is open; independent review examines the GitHub pull request.
+- Codex must not merge its own pull request. Only after explicit approval and a successful merge may the phase become PUSHED.
+- Rework stays on the same phase branch and pull request. Deployment remains prohibited until P12.
 
 ### Status Workflow
 
@@ -54,7 +55,7 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 | P0 | Repository Safety & Baseline | 0-2 h | PUSHED | - | - |
 | P1 | Local Development & Reproducible Build | 2-5 h | PUSHED | - | - |
 | P2 | API Contracts & Unit System Foundation | 5-9 h | PUSHED | - | - |
-| P3 | Structural Solver Stabilization | 9-14 h | HOLD | - | - |
+| P3 | Structural Solver Stabilization | 9-14 h | READY FOR REVIEW | - | - |
 | P4 | Verified Concrete Core | 14-20 h | HOLD | - | - |
 | P5 | Verified Steel Core | 20-25 h | HOLD | - | - |
 | P6 | Design-Code Registry & International Architecture | 25-29 h | HOLD | - | - |

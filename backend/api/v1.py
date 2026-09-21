@@ -11,7 +11,8 @@ from .domain.legacy_adapters import (
     element_to_legacy, normalize_element, normalize_structure, structure_to_legacy,
 )
 from .domain.schemas import (
-    CanonicalCombinationResult, CanonicalDisplacement, CanonicalMemberForces,
+    CanonicalCombinationResult, CanonicalDisplacement, CanonicalMemberEndForce,
+    CanonicalMemberForces, CanonicalReaction,
     ColumnInput, ElementRequest, ElementResponse, FootingInput,
     LegacyElementOutput, LegacyStructureOutput, SlabInput, StaircaseInput,
     StructureRequest, StructureResponse, VerificationStatus,
@@ -26,7 +27,10 @@ from .engine.concrete.slab_solid import analyze_solid_slab
 from .engine.concrete.slab_waffle import analyze_waffle_slab
 from .engine.concrete.staircase import analyze_concrete_staircase
 from .engine.load_combination import generate_combinations
-from .engine.structure_analyzer import StructureAnalyzer
+from .engine.structure_analyzer import (
+    SolverInputError, SolverNumericalError, StructureAnalyzer,
+    StructureUnstableError, UnsupportedSlabError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -162,6 +166,8 @@ def analyze_structure_v1(request: StructureRequest):
         raise _unsupported(f"The {request.code_id.value} family has no structure-level legacy analysis path")
     if any(section.inertia_mm4 is not None for section in request.sections):
         raise _unsupported("The legacy frame solver does not consume an explicit section inertia")
+    if request.slabs:
+        raise _unsupported("Slab load transfer to frame members is not implemented")
 
     try:
         canonical = normalize_structure(request)
@@ -178,6 +184,15 @@ def analyze_structure_v1(request: StructureRequest):
         legacy_results = _plain(handler.analyze_structure(legacy_model, raw_results))
         if set(legacy_results) != set(raw_results):
             raise ValueError("Legacy handler returned a mismatched combination mapping")
+    except UnsupportedSlabError as exc:
+        raise _unsupported(str(exc)) from exc
+    except StructureUnstableError as exc:
+        raise ContractError(exc.code, str(exc), 422) from exc
+    except SolverInputError as exc:
+        raise ContractError(exc.code, str(exc), 422) from exc
+    except SolverNumericalError as exc:
+        logger.exception("Frame solver numerical failure")
+        raise ContractError(exc.code, "Frame analysis could not be completed", 500) from exc
     except Exception as exc:
         logger.exception("Legacy structure engine failed")
         raise ContractError("ENGINE_FAILURE", "Structure analysis could not be completed", 500) from exc
@@ -189,10 +204,11 @@ def analyze_structure_v1(request: StructureRequest):
         raise ContractError("ENGINE_FAILURE", "Structure analysis could not be completed", 500) from exc
 
     warnings = [
-        "Frame and design results are legacy calculations and are not engineering-verified.",
+        "Legacy design results and code combinations are not engineering-verified.",
         "The compatibility adapter converts E from MPa to kN/m2 for metre/kN frame geometry.",
-        "Legacy load combinations and solver stability remain for P3 review.",
+        "The 2D linear-elastic frame core is benchmarked only for the documented P3 cases.",
     ]
+    warnings.extend(dict.fromkeys(warning for raw in raw_results.values() for warning in raw["warnings"]))
     if request.code_id not in (DesignCode.ACI, DesignCode.BS, DesignCode.EUROCODE):
         warnings.append("The legacy generator uses its generic dead-load combination for this code family.")
     return StructureResponse(
@@ -203,6 +219,12 @@ def analyze_structure_v1(request: StructureRequest):
 
 def _canonical_combinations(raw_results: dict) -> dict[str, CanonicalCombinationResult]:
     combinations = {}
+    def canonical_end(end: dict) -> CanonicalMemberEndForce:
+        return CanonicalMemberEndForce(
+            axial_n=to_canonical(end["axial"], D.FORCE, "kN"),
+            shear_n=to_canonical(end["shear"], D.FORCE, "kN"),
+            moment_n_mm=to_canonical(end["moment"], D.MOMENT, "kN*m"),
+        )
     for combo_id, raw in raw_results.items():
         combinations[combo_id] = CanonicalCombinationResult(
             name=raw["name"], expression=raw["expr"],
@@ -211,10 +233,25 @@ def _canonical_combinations(raw_results: dict) -> dict[str, CanonicalCombination
                 uy_mm=to_canonical(disp["uy"], D.LENGTH, "m"),
                 rz_rad=disp["rz"],
             ) for node_id, disp in raw["displacements"].items()},
+            reactions={node_id: CanonicalReaction(
+                rx_n=to_canonical(reaction["rx"], D.FORCE, "kN"),
+                ry_n=to_canonical(reaction["ry"], D.FORCE, "kN"),
+                mz_n_mm=to_canonical(reaction["mz"], D.MOMENT, "kN*m"),
+            ) for node_id, reaction in raw["reactions"].items()},
             member_forces={member_id: CanonicalMemberForces(
                 nmax_n=to_canonical(forces["Nmax"], D.FORCE, "kN"),
                 vmax_n=to_canonical(forces["Vmax"], D.FORCE, "kN"),
                 mmax_n_mm=to_canonical(forces["Mmax"], D.MOMENT, "kN*m"),
+                mmax_x_mm=to_canonical(forces["Mmax_x"], D.LENGTH, "m"),
+                midspan_local_y_displacement_mm=to_canonical(
+                    forces["midspan_local_y_displacement"], D.LENGTH, "m",
+                ),
+                applied_uniform_load_n_per_mm=to_canonical(
+                    forces["applied_uniform_load"], D.LINE_LOAD, "kN/m",
+                ),
+                end_1=canonical_end(forces["end_1"]),
+                end_2=canonical_end(forces["end_2"]),
             ) for member_id, forces in raw["member_forces"].items()},
+            warnings=raw["warnings"],
         )
     return combinations

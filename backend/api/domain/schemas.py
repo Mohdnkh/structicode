@@ -480,17 +480,36 @@ class CanonicalDisplacement(StrictModel):
     rz_rad: Finite
 
 
+class CanonicalReaction(StrictModel):
+    rx_n: Finite
+    ry_n: Finite
+    mz_n_mm: Finite
+
+
+class CanonicalMemberEndForce(StrictModel):
+    axial_n: Finite
+    shear_n: Finite
+    moment_n_mm: Finite
+
+
 class CanonicalMemberForces(StrictModel):
     nmax_n: Finite
     vmax_n: Finite
     mmax_n_mm: Finite
+    mmax_x_mm: Finite
+    midspan_local_y_displacement_mm: Finite
+    applied_uniform_load_n_per_mm: Finite
+    end_1: CanonicalMemberEndForce
+    end_2: CanonicalMemberEndForce
 
 
 class CanonicalCombinationResult(StrictModel):
     name: str
     expression: str
     displacements: dict[str, CanonicalDisplacement]
+    reactions: dict[str, CanonicalReaction]
     member_forces: dict[str, CanonicalMemberForces]
+    warnings: list[str] = Field(default_factory=list)
 
 
 class LegacyStructureOutput(StrictModel):

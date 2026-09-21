@@ -1,22 +1,58 @@
-# ================================
-# Load Combination Generator
-# ================================
+"""Legacy combination definitions and deterministic load-factor mechanics."""
+
+import math
+import re
+
+
+LOAD_CASES = frozenset({"D", "L", "W", "S", "E"})
+_TERM = re.compile(r"(?P<factor>(?:\d+(?:\.\d*)?|\.\d+))\s*(?P<case>[A-Za-z])")
+
+
+def parse_combination(expr: str) -> dict[str, float]:
+    """Parse signed, additive load terms; an absent case has factor zero."""
+    if not isinstance(expr, str) or not expr.strip():
+        raise ValueError("Load combination expression must be a nonempty string")
+    factors: dict[str, float] = {}
+    position = 0
+    first = True
+    while position < len(expr):
+        while position < len(expr) and expr[position].isspace():
+            position += 1
+        if position == len(expr):
+            break
+        sign = 1.0
+        if expr[position] in "+-":
+            sign = -1.0 if expr[position] == "-" else 1.0
+            position += 1
+        elif not first:
+            raise ValueError("Load combination terms must be separated by + or -")
+        while position < len(expr) and expr[position].isspace():
+            position += 1
+        term = _TERM.match(expr, position)
+        if term is None:
+            raise ValueError("Malformed load combination term")
+        case_id = term.group("case").upper()
+        if case_id not in LOAD_CASES:
+            raise ValueError(f"Unsupported load case: {case_id}")
+        factor = sign * float(term.group("factor"))
+        if not math.isfinite(factor):
+            raise ValueError("Load factor must be finite")
+        factors[case_id] = factors.get(case_id, 0.0) + factor
+        if not math.isfinite(factors[case_id]):
+            raise ValueError("Combined load factor must be finite")
+        position = term.end()
+        if position < len(expr) and not (expr[position].isspace() or expr[position] in "+-"):
+            raise ValueError("Malformed load combination expression")
+        first = False
+    if first or expr.rstrip()[-1] in "+-":
+        raise ValueError("Malformed load combination expression")
+    return factors
 
 def combine_loads(loads: dict, factors: dict) -> float:
-    """
-    يجمع الأحمال باستخدام معاملات الكود الإنشائي.
-    inputs:
-      loads: {dead, live, wind, snow, earthquake}
-      factors: {dead, live, wind, snow, earthquake}
-    returns:
-      الحمل المكافئ (kN أو kN/m أو kN/m² حسب العنصر)
-    """
-    return (
-        float(loads.get("dead", 0)) * factors.get("dead", 1.0) +
-        float(loads.get("live", 0)) * factors.get("live", 1.0) +
-        float(loads.get("wind", 0)) * factors.get("wind", 1.0) +
-        float(loads.get("snow", 0)) * factors.get("snow", 1.0) +
-        float(loads.get("earthquake", 0)) * factors.get("earthquake", 1.0)
+    """Sum named loads; cases omitted from a combination contribute zero."""
+    return sum(
+        float(loads.get(case, 0.0)) * factors.get(case, 0.0)
+        for case in ("dead", "live", "wind", "snow", "earthquake")
     )
 
 
