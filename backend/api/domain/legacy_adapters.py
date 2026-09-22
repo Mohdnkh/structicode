@@ -3,7 +3,8 @@
 The conversions here are compatibility boundaries. No structural formula belongs here.
 """
 
-from .identifiers import DesignCode, LEGACY_CODE_NAMES, LEGACY_LOAD_IDS, SupportId
+from .design_code_registry import legacy_name
+from .identifiers import DesignCode, LEGACY_LOAD_IDS, SupportId
 from .schemas import (
     AreaLoads, BeamInput, CanonicalBeam, CanonicalColumn, CanonicalElement,
     CanonicalFooting, CanonicalMaterial, CanonicalMember, CanonicalMemberLoad,
@@ -144,7 +145,7 @@ def element_to_legacy(value: CanonicalElement, code_id: DesignCode) -> dict:
             "barDiameter": value.bar_diameter_mm,
             "bottomBarCount": value.bottom_bar_count,
             "loads": _loads_from_canonical(value.area_loads_n_per_mm2, D.AREA_LOAD, "kN/m2"),
-            "code": LEGACY_CODE_NAMES[code_id],
+            "code": legacy_name(code_id),
         }
         if value.slab_type == "solid":
             data["topBarCount"] = value.top_bar_count
@@ -248,7 +249,7 @@ def normalize_structure(value: StructureRequest) -> CanonicalStructure:
 def structure_to_legacy(value: CanonicalStructure) -> dict:
     """Give the old frame solver metre/kN geometry and kN/m2 modulus explicitly."""
     return {
-        "code": LEGACY_CODE_NAMES[value.code_id],
+        "code": legacy_name(value.code_id),
         "units": {"length": "m", "force": "kN", "modulus": "kN/m2"},
         "materials": [{
             "id": material.id, "name": material.name, "fc": material.fc_mpa,

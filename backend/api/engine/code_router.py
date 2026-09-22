@@ -12,28 +12,32 @@ from ..codes.saudi import SaudiCode
 from ..codes.uae import UAECode
 from ..codes.turkey import TurkishCode
 from ..codes.steel import SteelCode
-from ..domain.identifiers import DesignCode, normalize_code_id
+from ..domain.design_code_registry import REGISTRY, get_family, validate_registry
+from ..domain.identifiers import DesignCode
 
 
-HANDLERS = {
-    DesignCode.ACI: ACI,
-    DesignCode.BS: BS,
-    DesignCode.EUROCODE: Eurocode,
-    DesignCode.AS: ASCode,
-    DesignCode.CSA: CSA,
-    DesignCode.IS: ISCode,
-    DesignCode.JORDAN: JordanCode,
-    DesignCode.EGYPT: EgyptianCode,
-    DesignCode.SAUDI: SaudiCode,
-    DesignCode.UAE: UAECode,
-    DesignCode.TURKEY: TurkishCode,
-    DesignCode.STEEL: SteelCode,
-}
+_HANDLER_ENTRIES = (
+    (DesignCode.ACI, ACI),
+    (DesignCode.BS, BS),
+    (DesignCode.EUROCODE, Eurocode),
+    (DesignCode.AS, ASCode),
+    (DesignCode.CSA, CSA),
+    (DesignCode.IS, ISCode),
+    (DesignCode.JORDAN, JordanCode),
+    (DesignCode.EGYPT, EgyptianCode),
+    (DesignCode.SAUDI, SaudiCode),
+    (DesignCode.UAE, UAECode),
+    (DesignCode.TURKEY, TurkishCode),
+    (DesignCode.STEEL, SteelCode),
+)
+if len(_HANDLER_ENTRIES) != len({key for key, _ in _HANDLER_ENTRIES}):
+    raise ValueError("Duplicate legacy handler key")
+HANDLERS = dict(_HANDLER_ENTRIES)
+validate_registry(REGISTRY, HANDLERS)
 
 
 def get_code_handler(code_name: str):
-    try:
-        handler_type = HANDLERS[normalize_code_id(code_name)]
-    except (KeyError, ValueError):
+    family = get_family(code_name)
+    if family is None:
         return None
-    return handler_type()
+    return HANDLERS[family.legacy_handler_key]()

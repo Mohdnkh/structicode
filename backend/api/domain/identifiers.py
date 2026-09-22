@@ -18,16 +18,6 @@ class DesignCode(StrEnum):
     STEEL = "steel"
 
 
-LEGACY_CODE_NAMES: dict[DesignCode, str] = {
-    DesignCode.ACI: "ACI", DesignCode.BS: "BS",
-    DesignCode.EUROCODE: "Eurocode", DesignCode.AS: "AS",
-    DesignCode.CSA: "CSA", DesignCode.IS: "IS",
-    DesignCode.JORDAN: "Jordan", DesignCode.EGYPT: "Egypt",
-    DesignCode.SAUDI: "Saudi", DesignCode.UAE: "UAE",
-    DesignCode.TURKEY: "Turkey", DesignCode.STEEL: "Steel",
-}
-
-
 def normalize_code_id(value: str | DesignCode) -> DesignCode:
     if isinstance(value, DesignCode):
         return value

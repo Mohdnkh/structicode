@@ -5,8 +5,11 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from .domain.identifiers import DesignCode, ElementId, LEGACY_CODE_NAMES
-from .legacy_capabilities import supports_element, supports_structure
+from .domain.design_code_registry import (
+    CombinationProfile, get_family, legacy_name,
+    supports_legacy_element, supports_legacy_structure,
+)
+from .domain.identifiers import ElementId
 from .domain.legacy_adapters import (
     element_to_legacy, normalize_element, normalize_structure, structure_to_legacy,
 )
@@ -78,7 +81,7 @@ def _plain(value: Any) -> Any:
 
 
 def _legacy_element_result(request: ElementRequest, data: dict) -> dict:
-    code_name = LEGACY_CODE_NAMES[request.code_id]
+    code_name = legacy_name(request.code_id)
     kind = request.input.kind
     if kind == "beam":
         return analyze_concrete_beam(data, code_name)
@@ -105,7 +108,7 @@ def analyze_element_v1(request: ElementRequest):
     value = request.input
     if request.seismic is not None:
         raise _unsupported("Seismic analysis is not implemented in the v1 contract")
-    if not supports_element(request.code_id, ElementId(value.kind)):
+    if not supports_legacy_element(request.code_id, ElementId(value.kind)):
         raise _unsupported(f"The {request.code_id.value} family has no legacy {value.kind} analysis path")
     if value.kind == "beam" and value.beam_type == "prestressed":
         raise _unsupported("Prestressed beam analysis is not implemented")
@@ -162,7 +165,7 @@ def analyze_element_v1(request: ElementRequest):
 
 @router.post("/structure", response_model=StructureResponse)
 def analyze_structure_v1(request: StructureRequest):
-    if not supports_structure(request.code_id):
+    if not supports_legacy_structure(request.code_id):
         raise _unsupported(f"The {request.code_id.value} family has no structure-level legacy analysis path")
     if any(section.inertia_mm4 is not None for section in request.sections):
         raise _unsupported("The legacy frame solver does not consume an explicit section inertia")
@@ -178,7 +181,7 @@ def analyze_structure_v1(request: StructureRequest):
     if handler is None or not hasattr(handler, "analyze_structure"):
         raise _unsupported("Structure analysis is unavailable for this code family")
     try:
-        legacy_model["loads"]["combinations"] = generate_combinations(LEGACY_CODE_NAMES[request.code_id])
+        legacy_model["loads"]["combinations"] = generate_combinations(legacy_name(request.code_id))
         raw_results = StructureAnalyzer(legacy_model).analyze_combinations()
         # All handlers expect the mapping of every combination, not one result.
         legacy_results = _plain(handler.analyze_structure(legacy_model, raw_results))
@@ -209,7 +212,7 @@ def analyze_structure_v1(request: StructureRequest):
         "The 2D linear-elastic frame core is benchmarked only for the documented P3 cases.",
     ]
     warnings.extend(dict.fromkeys(warning for raw in raw_results.values() for warning in raw["warnings"]))
-    if request.code_id not in (DesignCode.ACI, DesignCode.BS, DesignCode.EUROCODE):
+    if get_family(request.code_id).load_combination_profile == CombinationProfile.GENERIC_DEAD_ONLY:
         warnings.append("The legacy generator uses its generic dead-load combination for this code family.")
     return StructureResponse(
         code_id=request.code_id, canonical_input=canonical, combinations=combinations,
