@@ -1,87 +1,11 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Field, FormSection } from './workspace/FormControls'
 
-export default function BeamForm({ onSubmit }) {
-  const [type, setType] = useState('Normal')
-  const [code, setCode] = useState('ACI')
-  const [fc, setFc] = useState('')
-  const [fy, setFy] = useState('')
-  const [width, setWidth] = useState('')
-  const [depth, setDepth] = useState('')
-  const [length, setLength] = useState('')
-  const [cover, setCover] = useState('3')
-  const [rebarCount, setRebarCount] = useState('')
-  const [rebarDiameter, setRebarDiameter] = useState('')
-  const [loads, setLoads] = useState({ dead: '', live: '', wind: '', snow: '' })
-
-  const defaultValues = {
-    fc: 25,
-    fy: 420
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    const parsedData = {
-      type,
-      code,
-      fc: parseFloat(fc) || defaultValues.fc,
-      fy: parseFloat(fy) || defaultValues.fy,
-      width: parseFloat(width),
-      depth: parseFloat(depth),
-      length: parseFloat(length),
-      cover: parseFloat(cover),
-      rebar: {
-        count: parseInt(rebarCount),
-        diameter: parseFloat(rebarDiameter)
-      },
-      loads: {
-        dead: parseFloat(loads.dead) || 0,
-        live: parseFloat(loads.live) || 0,
-        wind: parseFloat(loads.wind) || 0,
-        snow: parseFloat(loads.snow) || 0
-      }
-    }
-
-    onSubmit(parsedData)
-  }
-
-  const beamTypes = ['Normal', 'Inverted', 'Tee', 'Prestressed']
-  const codes = ['ACI', 'BS', 'Eurocode', 'AS', 'CSA', 'IS', 'Jordan', 'Egypt', 'Saudi', 'UAE', 'Turkey']
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <select value={type} onChange={e => setType(e.target.value)} className="input">
-          {beamTypes.map(t => <option key={t}>{t}</option>)}
-        </select>
-
-        
-
-        <input type="number" step="0.01" placeholder="Concrete Strength fc (MPa)" value={fc} onChange={e => setFc(e.target.value)} className="input" />
-        <input type="number" step="0.01" placeholder="Steel Yield Strength fy (MPa)" value={fy} onChange={e => setFy(e.target.value)} className="input" />
-        <input type="number" step="0.01" placeholder="Beam Width b (cm)" value={width} onChange={e => setWidth(e.target.value)} className="input" />
-        <input type="number" step="0.01" placeholder="Beam Depth h (cm)" value={depth} onChange={e => setDepth(e.target.value)} className="input" />
-        <input type="number" step="0.01" placeholder="Beam Length L (m)" value={length} onChange={e => setLength(e.target.value)} className="input" />
-        <input type="number" placeholder="Number of Rebars n" value={rebarCount} onChange={e => setRebarCount(e.target.value)} className="input" />
-        <input type="number" placeholder="Bar Diameter ϕ (mm)" value={rebarDiameter} onChange={e => setRebarDiameter(e.target.value)} className="input" />
-        <input type="number" step="0.1" placeholder="Concrete Cover (cm)" value={cover} onChange={e => setCover(e.target.value)} className="input" />
-      </div>
-
-      <div className="pt-4 border-t">
-        <label className="block mb-2 font-semibold">Loads (kN/m):</label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <input type="number" placeholder="Dead Load" value={loads.dead} onChange={e => setLoads({ ...loads, dead: e.target.value })} className="input" />
-          <input type="number" placeholder="Live Load" value={loads.live} onChange={e => setLoads({ ...loads, live: e.target.value })} className="input" />
-          <input type="number" placeholder="Wind Load" value={loads.wind} onChange={e => setLoads({ ...loads, wind: e.target.value })} className="input" />
-          <input type="number" placeholder="Snow Load" value={loads.snow} onChange={e => setLoads({ ...loads, snow: e.target.value })} className="input" />
-        </div>
-      </div>
-
-      <div className="text-center pt-6">
-        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold">
-          Analyze Beam
-        </button>
-      </div>
-    </form>
-  )
+export default function BeamForm({ onSubmit, disabled }) {
+  const { t } = useTranslation(); const [values, setValues] = useState({ type: 'Normal', fc: '25', fy: '420', width: '', depth: '', length: '', cover: '3', rebarCount: '', rebarDiameter: '', dead: '', live: '', wind: '', snow: '' })
+  const set = key => event => setValues(current => ({ ...current, [key]: event.target.value }))
+  const submit = event => { event.preventDefault(); onSubmit({ type: values.type, fc: Number(values.fc), fy: Number(values.fy), width: Number(values.width), depth: Number(values.depth), length: Number(values.length), cover: Number(values.cover), rebar: { count: Number(values.rebarCount), diameter: Number(values.rebarDiameter) }, loads: { dead: Number(values.dead) || 0, live: Number(values.live) || 0, wind: Number(values.wind) || 0, snow: Number(values.snow) || 0 } }) }
+  const loads = ['dead', 'live', 'wind', 'snow']
+  return <form onSubmit={submit}><FormSection title={t('forms.geometry_material')}><Field label={t('forms.beam_type')}><select value={values.type} onChange={set('type')}><option value="Normal">Normal</option><option value="Inverted">Inverted</option><option value="Tee">Tee</option><option value="Prestressed">Prestressed</option></select></Field><Field label={t('forms.concrete_strength')}><input required type="number" min="0.01" step="0.01" value={values.fc} onChange={set('fc')} /></Field><Field label={t('forms.steel_strength')}><input required type="number" min="0.01" step="0.01" value={values.fy} onChange={set('fy')} /></Field><Field label={t('forms.beam_width')}><input required type="number" min="0.01" step="0.01" value={values.width} onChange={set('width')} /></Field><Field label={t('forms.beam_depth')}><input required type="number" min="0.01" step="0.01" value={values.depth} onChange={set('depth')} /></Field><Field label={t('forms.beam_span_m')}><input required type="number" min="0.01" step="0.01" value={values.length} onChange={set('length')} /></Field><Field label={t('forms.rebar_count')}><input required type="number" min="1" step="1" value={values.rebarCount} onChange={set('rebarCount')} /></Field><Field label={t('forms.bar_diameter')}><input required type="number" min="0.01" step="0.01" value={values.rebarDiameter} onChange={set('rebarDiameter')} /></Field><Field label={t('forms.cover')}><input required type="number" min="0" step="0.1" value={values.cover} onChange={set('cover')} /></Field></FormSection><FormSection title={t('forms.line_loads')}>{loads.map(key => <Field key={key} label={t(`forms.${key}`)}><input type="number" step="0.01" value={values[key]} onChange={set(key)} /></Field>)}</FormSection><div className="form-actions"><button className="button button-primary" type="submit" disabled={disabled}>{disabled ? t('common.analyzing') : t('forms.run_beam')}</button></div></form>
 }
