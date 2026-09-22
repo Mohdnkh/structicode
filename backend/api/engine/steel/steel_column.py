@@ -71,10 +71,14 @@ def analyze_steel_column(data, code='AISC'):
         "Pn (kN)": round(Pn, 2),
         "Pu (kN)": Pu,
         "phi": phi,
-        "status": status,
+        "status": "unverified",
+        "verification_status": "UNVERIFIED",
+        "check_state": "NOT_EVALUATED",
+        "legacy_status": status,
+        "warning": "Legacy steel comparison only; engineering adequacy has not been evaluated.",
         "details": {
             "boundary_condition": data.get('boundaryCondition'),
-            "formula": "AISC column buckling",
+            "formula": "Legacy unverified column buckling expression",
             "usage (%)": round(Pu / (phi * Pn) * 100, 1)
         },
         "recommendations": recommendations

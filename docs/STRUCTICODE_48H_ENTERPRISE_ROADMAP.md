@@ -60,8 +60,8 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 | P2 | API Contracts & Unit System Foundation | 5-9 h | PUSHED | - | - |
 | P3 | Structural Solver Stabilization | 9-14 h | PUSHED | - | - |
 | P4 | Verified Concrete Core | 14-20 h | DEFERRED — SOURCE BLOCKED | - | Verified ACI CODE-318-25 core not implemented; authorized source access required. P4 safety remediation merged. No concrete capability promoted to VERIFIED. |
-| P5 | Verified Steel Core | 20-25 h | HOLD | - | Eligible to start after source-blocked recovery is reviewed and merged; P4 verified concrete remains deferred. |
-| P6 | Design-Code Registry & International Architecture | 25-29 h | HOLD | - | - |
+| P5 | Verified Steel Core | 20-25 h | DEFERRED — SOURCE BLOCKED | - | Exact ANSI/AISC 360-22 provisions, applicable errata, authoritative section properties, and independent reference examples remain unavailable. Legacy steel safety claims are contained; no steel rule is VERIFIED. Verified P5 exit gate remains unmet. |
+| P6 | Design-Code Registry & International Architecture | 25-29 h | HOLD | - | Eligible to start after P5 source-blocked safety recovery is independently reviewed and merged; verified steel remains deferred. |
 | P7 | Engineering Reports & Traceability | 29-33 h | HOLD | - | - |
 | P8 | Enterprise UI/UX & Engineering Workspace | 33-39 h | HOLD | - | - |
 | P9 | Projects, Identity & Enterprise Data Foundation | 39-42 h | HOLD | - | - |
@@ -172,6 +172,8 @@ Objective: Replace the current duplicated and unit-inconsistent steel logic with
 - Return NOT EVALUATED for checks that are outside the implemented scope rather than treating omission as success.
 
 Exit gate: Steel beam/column results come from a single unit-consistent engine, benchmark tests pass, and unsupported limit states are clearly reported rather than silently ignored.
+
+Source-blocked restart condition: Resume verified P5 only when the exact applicable ANSI/AISC 360-22 provisions and limits, applicable errata checked against the source printing, authoritative section properties such as AISC Shapes Database v16.0 with definitions and units, and published/reference beam and column examples can be inspected for independent benchmarks. The verified exit gate remains unmet while P5 is deferred.
 
 ## P6 - Design-Code Registry & International Architecture
 
