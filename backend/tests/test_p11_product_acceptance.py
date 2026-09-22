@@ -7,7 +7,6 @@ from backend.api.domain.design_code_registry import (
     CapabilityStatus,
     DesignCode,
     ElementId,
-    MetadataConfidence,
     get_family,
     list_families,
 )
@@ -16,17 +15,82 @@ from backend.api.main import app
 
 ROOT = Path(__file__).resolve().parents[2]
 MATRIX = (ROOT / "docs" / "PRODUCT_CAPABILITY_MATRIX.md").read_text(encoding="utf-8")
+STATUS_PRESENTATION = {
+    "LEGACY_UNVERIFIED": "LEGACY",
+    "ENGINEERING_REVIEW_REQUIRED": "REVIEW",
+    "NOT_IMPLEMENTED": "N/I",
+    "SOURCE_BLOCKED": "SOURCE BLOCKED",
+}
 
 
-def test_product_matrix_lists_every_registry_family_and_truth_marker():
+def matrix_rows() -> dict[str, list[str]]:
+    rows = {}
+    for line in MATRIX.splitlines():
+        if not line.startswith("|") or line.startswith("| ---"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells and cells[0].startswith("`") and cells[0].endswith("`"):
+            rows[cells[0].strip("`")] = cells
+    return rows
+
+
+def aggregate_element_status(family, element_ids: set[ElementId]) -> str:
+    statuses = {
+        STATUS_PRESENTATION[item.capability.status.value]
+        for item in family.element_capabilities
+        if item.element_id in element_ids
+    }
+    return "+".join(sorted(statuses))
+
+
+def target_cell(family) -> str:
+    targets = [target.target_id for target in family.verification_targets]
+    return ", ".join(f"`{target}`" for target in targets) if targets else "—"
+
+
+def test_product_matrix_rows_match_each_registry_family():
+    rows = matrix_rows()
+    concrete = {ElementId.BEAM, ElementId.COLUMN, ElementId.SLAB, ElementId.FOOTING, ElementId.STAIRCASE}
+    steel = {ElementId.STEEL_BEAM, ElementId.STEEL_COLUMN}
+    assert set(rows) == {family.family_id.value for family in list_families()}
     for family in list_families():
-        assert f"`{family.family_id.value}`" in MATRIX
-        assert family.display_name in MATRIX
-        assert family.jurisdiction in MATRIX
-        assert family.standard_metadata.confidence.value in MATRIX
-        assert family.structure_analysis.status.value.split("_")[0] in MATRIX or "REVIEW" in MATRIX
-    assert "aci_318_25" in MATRIX
-    assert "aisc_360_22" in MATRIX
+        row = rows[family.family_id.value]
+        assert row[1] == family.display_name
+        assert row[2] == family.jurisdiction
+        assert row[3] == family.standard_metadata.confidence.value
+        assert row[4] == aggregate_element_status(family, concrete)
+        assert row[5] == aggregate_element_status(family, steel)
+        assert row[6] == STATUS_PRESENTATION[family.structure_analysis.status.value]
+        assert row[7] == STATUS_PRESENTATION[family.structure_design.status.value]
+        assert row[8] == STATUS_PRESENTATION[family.load_combination.status.value]
+        seismic = STATUS_PRESENTATION[family.seismic.status.value]
+        assert row[9].startswith(seismic)
+        if family.seismic.status == CapabilityStatus.NOT_IMPLEMENTED:
+            assert row[9] == seismic
+        else:
+            assert row[9].endswith("(v1 false)")
+        assert row[10] == target_cell(family)
+
+
+def test_documentation_regression_has_no_known_stale_release_phrases():
+    current_docs = [
+        ROOT / "README.md", ROOT / "docs" / "LOCAL_DEVELOPMENT.md",
+        ROOT / "docs" / "API_CONTRACTS.md", ROOT / "docs" / "RELEASE_SCOPE.md",
+        ROOT / "docs" / "PRODUCT_CAPABILITY_MATRIX.md",
+        ROOT / "docs" / "engineering" / "REPORT_TRACEABILITY.md",
+        ROOT / "docs" / "engineering" / "ENGINEERING_WORKSPACE_UI.md",
+        ROOT / "docs" / "engineering" / "ENTERPRISE_DATA_FOUNDATION.md",
+    ]
+    text = "\n".join(path.read_text(encoding="utf-8") for path in current_docs)
+    for phrase in (
+        "still lacks support and load editing controls",
+        "existing report path remains a legacy compatibility route",
+        "legacy shared-file implementation",
+        "P9 owns those capabilities",
+        "P10 must review",
+    ):
+        assert phrase.casefold() not in text.casefold()
+    assert "`.\\.venv\\Scripts\\Activate.ps1`" in (ROOT / "README.md").read_text(encoding="utf-8")
 
 
 def test_capability_api_matches_registry_and_release_expectations():

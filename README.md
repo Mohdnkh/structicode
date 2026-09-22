@@ -11,7 +11,6 @@ Requirements: Python 3.12, Node.js 20 LTS or newer, npm, and Git.
 ```sh
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r backend/requirements.txt
 python -m pip install -r backend/requirements-dev.txt
 npm ci
 export STRUCTICODE_DATABASE_URL=sqlite:///./structicode-local.sqlite3
@@ -20,7 +19,7 @@ python -m alembic upgrade head
 npm run dev
 ```
 
-On Windows PowerShell use `\.venv\Scripts\Activate.ps1` and `$env:NAME = "value"`. The combined command serves FastAPI at `http://127.0.0.1:8000` and Vite at `http://localhost:5173`. See [local development](docs/LOCAL_DEVELOPMENT.md) for the complete workflow.
+On Windows PowerShell use `.\.venv\Scripts\Activate.ps1` from the repository root and `$env:NAME = "value"`. The combined command serves FastAPI at `http://127.0.0.1:8000` and Vite at `http://localhost:5173`. See [local development](docs/LOCAL_DEVELOPMENT.md) for the complete workflow.
 
 ## Product boundaries
 

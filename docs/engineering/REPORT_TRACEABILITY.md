@@ -38,7 +38,7 @@ The report never concludes that a current legacy beam, column, structure, or ste
 
 ## Legacy PDF compatibility boundary
 
-`POST /generate-pdf` remains only for existing clients. It still accepts client-supplied input and result data, uses its legacy shared-file implementation, returns `X-Structicode-Report-Status: LEGACY_CLIENT_SUPPLIED_UNVERIFIED`, and adds an explicit PDF warning. It is not traceable and is not the P7 solution. Its server error response is generic and does not expose internal exception details.
+`POST /generate-pdf` remains only for existing clients. It still accepts client-supplied input and result data, writes a server-generated unique temporary filename, returns it through `FileResponse`, and removes the temporary file with a deterministic background cleanup task. It does not create or reuse `report.pdf`. It returns `X-Structicode-Report-Status: LEGACY_CLIENT_SUPPLIED_UNVERIFIED` and adds an explicit PDF warning. It is still not traceable as a trusted P7 report, and its server error response is generic.
 
 ## P9 persistence boundary
 

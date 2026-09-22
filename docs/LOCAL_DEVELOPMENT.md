@@ -21,7 +21,6 @@ Create and activate a virtual environment in the repository root:
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r backend/requirements.txt
 python -m pip install -r backend/requirements-dev.txt
 python -m pip check
 ```
@@ -31,7 +30,6 @@ On Windows PowerShell:
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r backend/requirements.txt
 python -m pip install -r backend/requirements-dev.txt
 python -m pip check
 ```
@@ -41,7 +39,6 @@ On a Unix-like system with Python 3.12 installed:
 ```sh
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r backend/requirements.txt
 python -m pip check
 ```
 
@@ -139,4 +136,4 @@ npm run build
 npm run verify:backend
 ```
 
-The Structure Designer and Analyzer now use the versioned `/api/v1` analysis routes through the shared frontend client. See [API_CONTRACTS.md](API_CONTRACTS.md) and [UNIT_SYSTEM.md](UNIT_SYSTEM.md) for request units and trust semantics. The tests verify transport and normalization, not structural engineering accuracy. The Structure Designer still lacks support and load editing controls; its default all-free model is rejected by v1 validation. The existing report path remains a legacy compatibility route. Deployment is reserved for P12.
+The Structure Designer and Analyzer use the versioned `/api/v1` analysis routes through the shared frontend client. The Structure Designer supports node creation, member connection, support editing, and minimal model controls; backend validation remains authoritative for stability and complexity, and slab transfer is unavailable. See [API_CONTRACTS.md](API_CONTRACTS.md) and [UNIT_SYSTEM.md](UNIT_SYSTEM.md) for request units and trust semantics. The tests verify transport and normalization, not structural engineering accuracy. The primary report path is `GET /api/v1/reports/{run_id}.pdf`; `POST /generate-pdf` remains legacy compatibility only. Deployment is reserved for P12.
