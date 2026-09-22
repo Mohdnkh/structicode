@@ -68,11 +68,15 @@ def analyze_steel_beam(data, code='AISC'):
         "Mp (kN·m)": round(Mp, 2),
         "Mu (kN·m)": round(Mu, 2),
         "phi": phi,
-        "status": status,
+        "status": "unverified",
+        "verification_status": "UNVERIFIED",
+        "check_state": "NOT_EVALUATED",
+        "legacy_status": status,
+        "warning": "Legacy steel comparison only; engineering adequacy has not been evaluated.",
         "details": {
             "support_type": support,
             "usage (%)": round(Mu / (phi * Mp) * 100, 1),
-            "note": f"Flexural check using {code}",
+            "note": f"Legacy unverified flexural comparison labeled {code}",
             "span (m)": span,
             "uniform_load (kN/m)": w
         },

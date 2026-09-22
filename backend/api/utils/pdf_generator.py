@@ -90,7 +90,9 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.set_font("Arial", size=10)
 
     combos = {}
-    if "results" in result:
+    if element_type in ("steel_beam", "steel_column"):
+        combos = {"structural": {}}
+    elif "results" in result:
         combos = result["results"]
     elif "result" in result and "structural" in result["result"]:
         combos = {"structural": result["result"]["structural"]}
@@ -101,6 +103,11 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
         pdf.set_font("Arial", "B", 11)
         pdf.cell(0, 8, f"Load Combination: {combo}", ln=True)
         pdf.set_font("Arial", size=10)
+
+        if element_type in ("steel_beam", "steel_column"):
+            pdf.cell(0, 8, "Overall: NOT EVALUATED (legacy, unverified)", ln=True)
+            pdf.ln(3)
+            continue
 
         if res.get("displacements"):
             pdf.cell(0, 8, "Displacements:", ln=True)

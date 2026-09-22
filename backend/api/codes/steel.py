@@ -41,10 +41,16 @@ class SteelCode:
 
         return {
             "status": "success",
+            "verification_status": "UNVERIFIED",
+            "check_state": "NOT_EVALUATED",
             "result": {
-                "status": status,
+                "status": "unverified",
+                "verification_status": "UNVERIFIED",
+                "check_state": "NOT_EVALUATED",
+                "legacy_status": status,
+                "warning": "Legacy steel comparison only; engineering adequacy has not been evaluated.",
                 "details": {
-                    "note": f"Column utilization: {utilization}%",
+                    "note": f"Legacy unverified column utilization: {utilization}%",
                 },
                 "recommendations": [] if safe else ["Increase section size", "Use higher steel grade"]
             }
@@ -73,10 +79,16 @@ class SteelCode:
 
         return {
             "status": "success",
+            "verification_status": "UNVERIFIED",
+            "check_state": "NOT_EVALUATED",
             "result": {
-                "status": status,
+                "status": "unverified",
+                "verification_status": "UNVERIFIED",
+                "check_state": "NOT_EVALUATED",
+                "legacy_status": status,
+                "warning": "Legacy steel comparison only; engineering adequacy has not been evaluated.",
                 "details": {
-                    "note": f"Beam utilization: {utilization}%",
+                    "note": f"Legacy unverified beam utilization: {utilization}%",
                 },
                 "recommendations": [] if safe else ["Increase moment capacity", "Reduce span or load"]
             }

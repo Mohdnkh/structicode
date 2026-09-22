@@ -128,8 +128,13 @@ async def analyze_element(payload: AnalysisInput):
             if seismic_handler:
                 seismic_result = seismic_handler.analyze(seismic_data)
 
+        steel_trust = (
+            {"verification_status": "UNVERIFIED", "check_state": "NOT_EVALUATED"}
+            if element_type in ("steel_beam", "steel_column") else {}
+        )
         return {
             "status": "success",
+            **steel_trust,
             "element": element_type,
             "result": {
                 "structural": structural,
