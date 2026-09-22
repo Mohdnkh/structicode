@@ -11,6 +11,7 @@ import os
 import logging
 from uuid import uuid4
 from pathlib import Path
+from sqlalchemy import text
 
 # ✅ الاستيرادات من backend.api لأن utils و engine بداخل api
 from backend.api.utils.pdf_generator import generate_pdf
@@ -28,6 +29,7 @@ from backend.api.engine.concrete.staircase import analyze_concrete_staircase
 from backend.api import capabilities_api, v1
 from backend.api.auth import router as auth_router, EnterpriseError
 from backend.api.data import routes as data_routes
+from backend.api.data.database import get_engine
 from backend.api.reporting import report_api
 from backend.api.domain.schemas import ErrorBody, ErrorEnvelope, ValidationDetail, VerificationStatus
 from backend.api.security import RateLimitMiddleware, RequestSizeLimitMiddleware, SecurityHeadersMiddleware, approved_cors_origins
@@ -209,6 +211,18 @@ async def generate_pdf_report(request: PDFRequest):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/ready")
+def ready():
+    """Minimal dependency readiness check with a deliberately safe response."""
+    try:
+        with get_engine().connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception:
+        logger.exception("Readiness database check failed")
+        return JSONResponse(status_code=503, content={"status": "unavailable"})
+    return {"status": "ready"}
 
 # Serve built frontend assets only when a local build exists.
 assets_dir = FRONTEND_DIST / "assets"

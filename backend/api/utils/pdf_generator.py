@@ -1,6 +1,8 @@
 from fpdf import FPDF
 from datetime import datetime
 import os
+import tempfile
+from pathlib import Path
 
 class PDFReport(FPDF):
     def header(self):
@@ -141,8 +143,13 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.set_font("Arial", size=10)
     pdf.multi_cell(0, 8, sanitize("• Verify detailing as per code.\n• Ensure minimum reinforcement rules.\n• Review seismic parameters.\n• Check deflection & crack limits."))
 
-    output_dir = os.path.abspath("reports")
-    os.makedirs(output_dir, exist_ok=True)
-    full_path = os.path.join(output_dir, filename)
-    pdf.output(full_path, "F")  # ✅ نكتب الملف فعلياً
+    temp_dir = Path(os.getenv("STRUCTICODE_TEMP_DIR") or tempfile.gettempdir())
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(filename).suffix or ".pdf"
+    with tempfile.NamedTemporaryFile(
+        mode="wb", prefix="structicode-legacy-", suffix=suffix,
+        dir=temp_dir, delete=False,
+    ) as temporary_file:
+        full_path = temporary_file.name
+    pdf.output(full_path, "F")
     return full_path

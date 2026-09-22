@@ -1,20 +1,27 @@
-# Node
-node_modules
-package-lock.json
-
-# Frontend
-frontend/node_modules
-frontend/package-lock.json
-# ملاحظة: ما منعنا frontend/dist عشان رح ننسخه من stage 1
-
-# Git
 .git
 .gitignore
-
-# Editors
+.env
+.env.*
+!.env.example
+node_modules
+frontend/node_modules
+frontend/dist
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+reports
+*.sqlite
+*.sqlite3
+*.db
+*.pkl
+*.pdf
+*.log
 .vscode
 .idea
-
-# OS files
-.DS_Store
-Thumbs.db
+docs
+backend/tests

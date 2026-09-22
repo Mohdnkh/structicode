@@ -17,7 +17,11 @@ def run_migrations_offline():
     with context.begin_transaction():context.run_migrations()
 def run_migrations_online():
     connectable=engine_from_config(config.get_section(config.config_ini_section,{}),prefix="sqlalchemy.",poolclass=pool.NullPool)
-    with connectable.connect() as connection:
+    # Keep the Alembic version update and schema DDL in one committed
+    # transaction where the backend supports transactional DDL.  Using
+    # ``connect()`` here leaves the revision row uncommitted with SQLAlchemy
+    # 2.x, which makes a subsequent migration appear to be a fresh upgrade.
+    with connectable.begin() as connection:
         if connection.dialect.name=="sqlite":connection.exec_driver_sql("PRAGMA foreign_keys=ON")
         context.configure(connection=connection,target_metadata=target_metadata)
         with context.begin_transaction():context.run_migrations()

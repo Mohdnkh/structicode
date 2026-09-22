@@ -35,7 +35,7 @@ On Windows PowerShell use `.\.venv\Scripts\Activate.ps1` from the repository roo
 
 UI routes: `/`, `/analyze`, `/structure-designer`, `/sign-in`, and `/projects`.
 
-API entry points include `/health`, `/api/v1/capabilities`, `/api/v1/analysis/element`, `/api/v1/analysis/structure`, `/api/v1/analysis-runs/{id}`, `/api/v1/reports/{id}.pdf`, `/api/v1/auth/*`, and `/api/v1/projects`.
+API entry points include `/health`, `/ready`, `/api/v1/capabilities`, `/api/v1/analysis/element`, `/api/v1/analysis/structure`, `/api/v1/analysis-runs/{id}`, `/api/v1/reports/{id}.pdf`, `/api/v1/auth/*`, and `/api/v1/projects`.
 
 ## Testing
 
@@ -62,7 +62,9 @@ python scripts/check_repository_hygiene.py
 - [Capability matrix](docs/PRODUCT_CAPABILITY_MATRIX.md)
 - [Release checklist](docs/RELEASE_CHECKLIST.md)
 - [P12 decision inputs](docs/P12_DEPLOYMENT_DECISION_INPUT.md)
+- [Deployment decision](docs/DEPLOYMENT_DECISION.md)
+- [Deployment package](docs/deployment/PRODUCTION_TOPOLOGY.md)
 
 ## Release status
 
-P0 through P3 and P6 through P10 are pushed. P4 and P5 remain source blocked. P11 is the current product-acceptance and documentation review. P12 deployment decisions have not started; no deployment is configured or performed.
+P0 through P3 and P6 through P11 are pushed. P4 and P5 remain source blocked. P12 deployment packaging is prepared for review with a documented NO-GO decision; no deployment is configured or performed.
