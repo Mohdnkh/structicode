@@ -22,7 +22,7 @@ from backend.api.engine.concrete.beam import analyze_concrete_beam
 from backend.api.engine.concrete.column import analyze_concrete_column
 from backend.api.engine.concrete.footing import analyze_concrete_footing
 from backend.api.engine.concrete.staircase import analyze_concrete_staircase
-from backend.api import v1
+from backend.api import capabilities_api, v1
 from backend.api.domain.schemas import ErrorBody, ErrorEnvelope, ValidationDetail, VerificationStatus
 
 app = FastAPI()
@@ -31,6 +31,7 @@ FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 app.include_router(structure_router.router, prefix="/api")
 app.include_router(v1.router)
+app.include_router(capabilities_api.router)
 
 
 @app.exception_handler(v1.ContractError)
