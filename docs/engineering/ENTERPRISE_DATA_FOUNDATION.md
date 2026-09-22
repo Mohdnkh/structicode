@@ -39,4 +39,4 @@ Project ownership metadata stays outside the P7 record hash boundary. The browse
 
 P9 is a local foundation only. It has no OAuth or SSO, MFA, password reset, email verification, invitations, durable PDF blob storage, production database hardening, cloud backup, or production deployment.
 
-P10 must review CORS, request and rate limits, secret handling, dependency security, production authentication/session behavior, tenant-isolation regression gates, and CI. P12 must decide managed database topology, backups, migrations in production, report/blob storage, secret management, HTTPS, observability, and rollback before any release.
+P10 reviewed approved CORS origins, request-size and model-complexity limits, authentication-secret handling, process-local rate limiting, dependency-risk evidence, tenant-isolation regressions, fail-closed persistence behavior, and CI revision-range checks. P12 must decide managed database topology, backups, migrations in production, report/blob storage, secret management, HTTPS, observability, and rollback before any public release.

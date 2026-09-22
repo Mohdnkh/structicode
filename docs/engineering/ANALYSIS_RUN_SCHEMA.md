@@ -30,7 +30,7 @@ All hashes use SHA-256 over deterministic UTF-8 JSON: sorted keys, compact separ
 
 ## Immutability and lifetime
 
-The model is frozen. The in-memory store deep-copies on insertion and retrieval so nested JSON snapshots returned to a caller cannot mutate the stored record. P7 records are process-local and bounded; eviction is FIFO. Restarting the process destroys every run. This is an explicit P9 persistence handoff, not durable engineering project history.
+The model is frozen. The anonymous in-memory store deep-copies on insertion and retrieval, is bounded with FIFO eviction, and is lost on restart. Project-owned records use the P9 database persistence path and survive API restart after membership authorization and hash verification. Neither path makes the calculation engineering-verified.
 
 ## Capability and engine truth
 

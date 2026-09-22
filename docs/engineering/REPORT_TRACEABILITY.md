@@ -14,7 +14,7 @@ The new report is a traceable software record, not an engineering certificate. P
 
 `AnalysisRunStore` defines the storage boundary. P7 supplies `InMemoryAnalysisRunStore`, a thread-safe FIFO store with a configurable `STRUCTICODE_ANALYSIS_RUN_LIMIT` and default maximum of 100 records. It deep-copies records on storage and lookup, preventing caller mutation from changing a stored snapshot. When capacity is exceeded, it deterministically evicts the oldest record.
 
-This store is process-local and ephemeral: records are lost on restart, are not durable project history, and are not safe for multi-instance production use. P9 must replace or implement this interface with persistent, owned enterprise storage. P7 does not add a database, identity, project ownership, migrations, or durable history.
+The anonymous store is process-local and ephemeral: anonymous records are lost on restart and are not safe for multi-instance production use. P9 adds a separate persistent, owned store for project-bound records. Project records are authorized by tenant membership and survive restart; PDF bytes remain regenerated report artifacts rather than durable blobs.
 
 ## Immutable snapshots and hashes
 
@@ -40,6 +40,6 @@ The report never concludes that a current legacy beam, column, structure, or ste
 
 `POST /generate-pdf` remains only for existing clients. It still accepts client-supplied input and result data, uses its legacy shared-file implementation, returns `X-Structicode-Report-Status: LEGACY_CLIENT_SUPPLIED_UNVERIFIED`, and adds an explicit PDF warning. It is not traceable and is not the P7 solution. Its server error response is generic and does not expose internal exception details.
 
-## P9 handoff
+## P9 persistence boundary
 
-P9 should replace the in-memory store behind `AnalysisRunStore` with durable records owned by projects/organizations/users, preserve immutable input/result/capability snapshots and hash semantics, add retention/audit policies, and coordinate report storage across instances. It must preserve the P7 server-owned run boundary.
+P9 preserves the P7 server-owned run boundary while adding durable records owned by projects, organizations, and users. The immutable input/result/capability snapshots and hash semantics remain unchanged. P10 adds fail-closed persistence and tenant-isolation regression gates. Retention, backups, multi-instance storage, and production report/blob coordination remain P12 decisions.

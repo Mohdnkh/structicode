@@ -2,7 +2,7 @@
 
 ## Information architecture
 
-P8 provides three application destinations: Home, Element Analysis, and Structure Workspace. The shared application shell provides navigation, a language control, document language/direction handling, and a skip link. It does not present project, organization, account, billing, or authentication features.
+The application shell provides Home, Element Analysis, Structure Workspace, Sign In, and Projects destinations. It provides navigation, language and direction handling, a skip link, and explicit project/authentication boundaries. Billing and production identity are not implemented.
 
 ## Capability-driven controls
 
@@ -24,15 +24,15 @@ Canonical `response.combinations` results are primary. Displacements use mm/rad,
 
 ## P7 reports
 
-Both primary workflows download reports only with `analysis_run_id` through the P7 server-owned report endpoint. The browser helper creates and revokes object URLs. The legacy PDF endpoint remains compatibility-only and is not visible in the P8 workflows. The UI discloses that P7 runs are process-local and are lost after API restart.
+Both primary workflows download reports only with `analysis_run_id` through the P7 server-owned report endpoint. Anonymous runs are `EPHEMERAL`, process-local, and lost after API restart. Runs submitted with an authorized project are `PROJECT_PERSISTED`, tenant-scoped, and retrievable after restart. PDFs are regenerated from the stored run; PDF bytes are not durable blobs. The legacy PDF endpoint remains compatibility-only and is not visible in the primary workflows.
 
 ## Language, responsive behavior, and accessibility
 
 The shell persists only the language preference. It applies `lang` and `dir` at the document element, including Arabic RTL. CSS uses semantic tokens, regular CSS classes, responsive grids, scrollable engineering tables, semantic labels, keyboard-accessible canvas nodes, visible focus rings, text-bearing status badges, status live regions, disabled controls, and reduced-motion support.
 
-## P9 handoff
+## P9 and P10 integration
 
-P8 keeps model state in the current page session. It adds no identity, ownership, database, project, or durable engineering-record persistence. P9 owns those capabilities.
+The UI keeps unsaved model state in the current page session, while P9 supplies local identity, organization membership, project selection, and project-owned run persistence. Project and report requests are authorized by current database membership, not by a client-selected role. P10 adds request limits, CORS, rate limiting, security headers, fail-closed persistence behavior, and regression gates. These controls do not promote any calculation to VERIFIED.
 ## P8 independent-review rework
 
 The Structure Workspace now renders a dedicated capability summary from the P6 family record. It consumes `family.structure_analysis`, `family.structure_design`, `family.load_combination`, and `family.seismic` directly; it does not infer those states from a code-family name or a frontend matrix.

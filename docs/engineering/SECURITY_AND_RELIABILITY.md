@@ -8,5 +8,7 @@ P10 establishes a QA and security gate for the current local release candidate. 
 - There is no multi-instance cache or session coordination and no production observability deployment.
 - No production deployment has been completed.
 - CORS defaults to the documented local frontend origins and can be explicitly configured for a controlled local environment.
-- Request-size and model-complexity limits reduce local abuse risk but are not a substitute for an internet-facing gateway.
+- Request-size and model-complexity limits reduce local abuse risk but are not a substitute for an internet-facing gateway. The default request body limit is 1 MiB.
+- Authentication secrets must be configured and at least 32 bytes; sensitive auth and protected-run responses use `Cache-Control: no-store`.
+- Project, run, and report access fails closed when persistence is unavailable and is checked against current tenant membership. The rate limiter is process-local.
 - Dependency audit results are recorded in the P10 audit; advisories require normal dependency maintenance and risk review.
