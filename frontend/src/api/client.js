@@ -65,6 +65,7 @@ export async function downloadTraceableReport(runId) {
   try { response = await fetch(`${API_BASE}/api/v1/reports/${encodeURIComponent(runId)}.pdf`, { headers: authHeaders() }) }
   catch { throw new ApiError('Could not connect to the local API.', 0, 'NETWORK_ERROR') }
   if (!response.ok) {
+    if (response.status === 401) clearAccessToken()
     let body = {}; try { body = await response.json() } catch { /* generic safe error */ }
     throw new ApiError(body.error?.message || 'Could not generate the traceable report.', response.status, body.error?.code || 'REPORT_ERROR')
   }

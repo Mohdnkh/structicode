@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from backend.api.data.database import session_scope
 from backend.api.data.models import User
 
-ALGORITHM="HS256"; ISSUER="structicode-local"; AUDIENCE="structicode-local"; PASSWORDS=CryptContext(schemes=["bcrypt"], deprecated="auto")
+ALGORITHM="HS256"; ISSUER="structicode-local"; AUDIENCE="structicode-local"; PASSWORDS=CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated=["bcrypt"])
 
 class EnterpriseError(Exception):
     def __init__(self, code: str, message: str, status_code: int=400): self.code=code; self.message=message; self.status_code=status_code
@@ -42,6 +42,7 @@ def decode_access_token(token: str) -> str:
     return subject
 
 def user_from_authorization(authorization: str | None) -> User:
+    auth_secret()
     if not authorization or not authorization.startswith("Bearer "): raise EnterpriseError("AUTH_REQUIRED","Authentication is required",401)
     user_id=decode_access_token(authorization.removeprefix("Bearer ").strip())
     try:

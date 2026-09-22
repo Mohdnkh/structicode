@@ -13,6 +13,7 @@ from backend.api.data.database import configure_database, session_scope
 from backend.api.data.models import OrganizationMembership, PersistentAnalysisRun, ReportRecord, User
 from backend.api.main import app
 from backend.api.reporting.run_store import RUN_STORE
+from backend.api.auth.security import hash_password, verify_password
 
 
 ELEMENT = {
@@ -105,9 +106,33 @@ def test_auth_registration_normalization_login_and_secret_safety(client: TestCli
     assert unavailable.status_code == 503 and unavailable.json()["error"]["code"] == "AUTH_NOT_CONFIGURED"
 
 
+def test_password_hashing_preserves_long_ascii_and_unicode_boundaries():
+    first = "a" * 72 + "A-long-suffix"
+    second = "a" * 72 + "B-long-suffix"
+    assert not verify_password(second, hash_password(first))
+    unicode_first = "é" * 36 + "-first"
+    unicode_second = "é" * 36 + "-second"
+    assert 12 <= len(unicode_first) <= 128 and len(unicode_first.encode("utf-8")) > 72
+    assert not verify_password(unicode_second, hash_password(unicode_first))
+
+
+def test_auth_secret_is_checked_before_register_or_login_database_disclosure(client: TestClient, monkeypatch):
+    monkeypatch.delenv("STRUCTICODE_AUTH_SECRET")
+    registration = {"email": "blocked@example.com", "password": "P9-test-password!", "display_name": "Blocked"}
+    first = client.post("/api/v1/auth/register", json=registration)
+    duplicate = client.post("/api/v1/auth/register", json=registration)
+    valid_login = client.post("/api/v1/auth/login", json={"email": registration["email"], "password": registration["password"]})
+    invalid_login = client.post("/api/v1/auth/login", json={"email": "missing@example.com", "password": registration["password"]})
+    me = client.get("/api/v1/auth/me")
+    assert all(response.status_code == 503 and response.json()["error"]["code"] == "AUTH_NOT_CONFIGURED" for response in (first, duplicate, valid_login, invalid_login, me))
+    with session_scope() as session:
+        assert session.scalar(select(User).where(User.email == registration["email"])) is None
+
+
 def test_projects_versioning_and_current_membership_authorization(client: TestClient):
     alpha, beta = register(client, "alpha@example.com"), register(client, "beta@example.com")
     owned = project(client, alpha)
+    assert any(marker in client.get(f"/api/v1/projects/{owned['id']}", headers=headers(alpha)).json()["created_at"] for marker in ("Z", "+00:00"))
     listing = client.get("/api/v1/projects", headers=headers(alpha))
     assert listing.status_code == 200 and listing.json()[0]["id"] == owned["id"]
     update = client.patch(f"/api/v1/projects/{owned['id']}", headers=headers(alpha), json={"name": "Tower revised", "expected_version": 1})
@@ -174,3 +199,4 @@ def test_project_bound_structure_analysis_persists(client: TestClient):
     assert response.json()["persistence_state"] == "PROJECT_PERSISTED"
     history = client.get(f"/api/v1/projects/{owned['id']}/analysis-runs", headers=headers(account))
     assert history.status_code == 200 and history.json()[0]["analysis_kind"] == "structure"
+    assert any(marker in history.json()[0]["created_at"] for marker in ("Z", "+00:00"))

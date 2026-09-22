@@ -17,11 +17,28 @@ test('project identifiers enter only selected project analysis envelopes', () =>
 })
 
 test('identity client centralizes bearer injection and clears a rejected session', async () => {
-  const source = await readFile(new URL('../src/api/client.js', import.meta.url), 'utf8')
+  const [source, projectContext] = await Promise.all([
+    readFile(new URL('../src/api/client.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/context/ProjectContext.jsx', import.meta.url), 'utf8'),
+  ])
   assert.match(source, /function authHeaders/)
   assert.match(source, /Authorization: `Bearer \$\{token\}`/)
   assert.match(source, /response\.status === 401\) clearAccessToken/)
   assert.match(source, /sessionStorage/)
+  assert.match(projectContext, /structicode-auth-cleared/)
+  assert.match(projectContext, /setActiveProjectId\(null\)/)
+})
+
+test('stale projects are replaced and report 401 clears the same session', async () => {
+  const [projects, client] = await Promise.all([
+    readFile(new URL('../src/pages/Projects.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/api/client.js', import.meta.url), 'utf8'),
+  ])
+  assert.match(projects, /activeProjectId !== selected\.id/)
+  assert.match(projects, /reason\.status === 404/)
+  assert.match(client, /downloadTraceableReport[\s\S]*response\.status === 401[\s\S]*clearAccessToken/)
+  assert.deepEqual(projectAnalysisContext(false, 'user-a-project'), {})
+  assert.deepEqual(projectAnalysisContext(true, 'user-b-project'), { projectId: 'user-b-project' })
 })
 
 test('persistence notices distinguish local project records from ephemeral records', async () => {
