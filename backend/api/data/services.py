@@ -2,6 +2,7 @@
 from __future__ import annotations
 from hashlib import sha256
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from backend.api.auth.security import EnterpriseError
 from backend.api.data.models import EngineVersion, OrganizationMembership, PersistentAnalysisRun, Project, ReportRecord
@@ -18,7 +19,14 @@ def engine_version_for_run(session:Session,record:AnalysisRunRecord)->EngineVers
     meta=record.engine_metadata
     item=session.scalar(select(EngineVersion).where(EngineVersion.engine_id==meta.engine_id,EngineVersion.engine_version==meta.engine_version,EngineVersion.repository_commit_sha==meta.repository_commit_sha,EngineVersion.analysis_run_schema_version==record.schema_version,EngineVersion.report_schema_version==meta.report_schema_version))
     if item is None:
-        item=EngineVersion(engine_id=meta.engine_id,engine_version=meta.engine_version,repository_commit_sha=meta.repository_commit_sha,analysis_run_schema_version=record.schema_version,report_schema_version=meta.report_schema_version); session.add(item); session.flush()
+        candidate=EngineVersion(engine_id=meta.engine_id,engine_version=meta.engine_version,repository_commit_sha=meta.repository_commit_sha,analysis_run_schema_version=record.schema_version,report_schema_version=meta.report_schema_version)
+        try:
+            with session.begin_nested():
+                session.add(candidate); session.flush()
+            item = candidate
+        except IntegrityError:
+            item = session.scalar(select(EngineVersion).where(EngineVersion.engine_id==meta.engine_id,EngineVersion.engine_version==meta.engine_version,EngineVersion.repository_commit_sha==meta.repository_commit_sha,EngineVersion.analysis_run_schema_version==record.schema_version,EngineVersion.report_schema_version==meta.report_schema_version))
+            if item is None: raise
     return item
 
 def assert_integrity(record:AnalysisRunRecord)->None:

@@ -1,0 +1,47 @@
+name: QA and security gate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-checks:
+    runs-on: ubuntu-latest
+    env:
+      STRUCTICODE_DATABASE_URL: sqlite:///./.structicode/ci.db
+      STRUCTICODE_AUTH_SECRET: ci-only-secret-do-not-use-in-production-32
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - name: Install Python dependencies
+        run: python -m pip install -r backend/requirements-dev.txt
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install JavaScript dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check repository hygiene
+        run: python scripts/check_repository_hygiene.py
+      - name: Apply clean database migrations
+        run: python -m alembic upgrade head
+      - name: Verify backend import
+        run: python -c "import backend.api.main"
+      - name: Run backend tests
+        run: python -m pytest backend/tests -q
+      - name: Run frontend tests
+        run: node --test frontend/tests/*.test.mjs
+      - name: Build frontend
+        run: npm run build
+      - name: Check patch whitespace
+        run: git diff --check

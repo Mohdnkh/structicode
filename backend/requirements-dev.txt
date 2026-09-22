@@ -1,3 +1,6 @@
 -r requirements.txt
+
+# Pinned QA and security tooling used by the local and CI gates.
 pytest==8.4.2
 httpx==0.28.1
+pip-audit==2.9.0
