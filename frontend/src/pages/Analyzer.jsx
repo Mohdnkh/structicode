@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import BeamForm from '../components/BeamForm'
 import ColumnForm from '../components/ColumnForm'
 import SlabForm from '../components/SlabForm'
@@ -7,140 +6,99 @@ import StaircaseForm from '../components/StaircaseForm'
 import FootingForm from '../components/FootingForm'
 import SteelColumnForm from '../components/SteelColumnForm'
 import SteelBeamForm from '../components/SteelBeamForm'
-import { useTranslation } from 'react-i18next'
-import { analyzeElement, legacyPdf } from '../api/client'
+import { analyzeElement, downloadBlob, downloadTraceableReport, getCapabilities } from '../api/client'
+import { elementCapability, isElementSelectable } from '../api/capabilities'
+import CapabilityBadge from '../components/workspace/CapabilityBadge'
+import CapabilityPanel from '../components/workspace/CapabilityPanel'
+import ReportAction from '../components/workspace/ReportAction'
+import { ErrorPanel, LoadingState, StatusNotice } from '../components/workspace/StatusNotice'
+
+const elements = [
+  ['beam', 'Beam'], ['column', 'Column'], ['slab', 'Slab'], ['staircase', 'Staircase'], ['footing', 'Footing'], ['steel_beam', 'Steel beam'], ['steel_column', 'Steel column'],
+]
+
+function FormForElement({ element, onSubmit, disabled }) {
+  const props = { onSubmit, disabled }
+  switch (element) {
+    case 'beam': return <BeamForm {...props} />
+    case 'column': return <ColumnForm {...props} />
+    case 'slab': return <SlabForm {...props} />
+    case 'staircase': return <StaircaseForm {...props} />
+    case 'footing': return <FootingForm {...props} />
+    case 'steel_beam': return <SteelBeamForm {...props} />
+    case 'steel_column': return <SteelColumnForm {...props} />
+    default: return null
+  }
+}
+
+function ElementResult({ result, reportLoading, onDownload }) {
+  if (!result) return <div className="empty-state">Select an available capability route, enter its inputs, and run the analysis.</div>
+  if (result.request_status !== 'success') return <ErrorPanel error={result.error} />
+  return <div className="result-grid" aria-live="polite">
+    <section className="result-section"><div className="section-heading"><div><p className="eyebrow">Analysis completed</p><h2>Element result</h2></div><CapabilityBadge status={result.verification_status} /></div>
+      <div className="summary-grid">
+        <div className="summary-item"><span>Family</span><strong>{result.code_id}</strong></div>
+        <div className="summary-item"><span>Element</span><strong>{result.element_id}</strong></div>
+        <div className="summary-item"><span>Analysis run ID</span><strong className="mono">{result.analysis_run_id}</strong></div>
+      </div>
+      {result.warnings?.length > 0 && <StatusNotice tone="warning" title="Engineering warnings">{result.warnings.map(item => <p key={item}>{item}</p>)}</StatusNotice>}
+      <section className="legacy-boundary"><h3>Legacy / Unverified Design Output</h3><p>This retained compatibility output is not an authoritative engineering conclusion. It is kept separate from the server-owned canonical run metadata.</p>
+        <details className="raw-details"><summary>Inspect legacy output</summary><pre>{JSON.stringify(result.legacy_unverified, null, 2)}</pre></details></section>
+      <details className="raw-details"><summary>Inspect canonical input</summary><pre>{JSON.stringify(result.canonical_input, null, 2)}</pre></details>
+      <ReportAction runId={result.analysis_run_id} onDownload={onDownload} loading={reportLoading} />
+    </section>
+  </div>
+}
 
 export default function Analyzer() {
-  const { t, i18n } = useTranslation()
-  const navigate = useNavigate()
-  const [code, setCode] = useState('')
-  const [element, setElement] = useState('')
+  const [capabilities, setCapabilities] = useState(null)
+  const [capabilityError, setCapabilityError] = useState(null)
+  const [selectedFamilyId, setSelectedFamilyId] = useState('')
+  const [selectedElement, setSelectedElement] = useState('')
   const [result, setResult] = useState(null)
-  const [seismic, setSeismic] = useState({ zone: '', soil: '', importance: '', system: '' })
   const [loading, setLoading] = useState(false)
-  const [lastInput, setLastInput] = useState(null)
+  const [reportLoading, setReportLoading] = useState(false)
 
-  useEffect(() => {
-    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
-  }, [i18n.language])
+  const loadCapabilities = useCallback(async () => {
+    setCapabilityError(null); setCapabilities(null)
+    try { const data = await getCapabilities(); setCapabilities(data); setSelectedFamilyId(current => current || data.families[0]?.family_id || '') }
+    catch (error) { setCapabilityError(error) }
+  }, [])
+  useEffect(() => { loadCapabilities() }, [loadCapabilities])
 
-  const codes = ['ACI', 'BS', 'Eurocode', 'AS', 'CSA', 'IS', 'Jordan', 'Egypt', 'Saudi', 'UAE', 'Turkey']
-  const concreteElements = [
-    { label: t('analyzer.beam'), value: 'beam' },
-    { label: t('analyzer.column'), value: 'column' },
-    { label: t('analyzer.slab'), value: 'slab' },
-    { label: t('analyzer.staircase'), value: 'staircase' },
-    { label: t('analyzer.footing'), value: 'footing' }
-  ]
-  const steelElements = [
-    { label: t('analyzer.steel_beam'), value: 'steel_beam' },
-    { label: t('analyzer.steel_column'), value: 'steel_column' }
-  ]
+  const family = useMemo(() => capabilities?.families.find(item => item.family_id === selectedFamilyId) || null, [capabilities, selectedFamilyId])
+  const capability = elementCapability(family, selectedElement)
+  const selectable = isElementSelectable(family, selectedElement)
 
-  const zoneOptionsMap = {
-    Jordan: ['1', '2A', '2B', '3'],
-    Egypt: ['1', '2', '3'],
-    Saudi: ['A', 'B', 'C', 'D1', 'D2'],
-    UAE: ['Zone 0', 'Zone 1', 'Zone 2A', 'Zone 2B'],
-    Turkey: ['1', '2', '3', '4'],
-    Eurocode: ['low', 'medium', 'high'],
-    ACI: ['1', '2', '3', '4'],
-    AS: ['A', 'B', 'C', 'D'],
-    CSA: ['low', 'medium', 'high'],
-    IS: ['II', 'III', 'IV', 'V'],
-    BS: ['low', 'moderate', 'high']
+  const handleFamily = event => { setSelectedFamilyId(event.target.value); setSelectedElement(''); setResult(null) }
+  const handleElement = event => { setSelectedElement(event.target.value); setResult(null) }
+  const handleSubmit = async formData => {
+    if (!family || !selectedElement || !selectable) return
+    setLoading(true); setResult(null)
+    try { setResult(await analyzeElement({ code: family.family_id, element: selectedElement, formData })) }
+    catch (error) { setResult({ request_status: 'error', error }) }
+    finally { setLoading(false) }
+  }
+  const handleReport = async () => {
+    if (!result?.analysis_run_id) return
+    setReportLoading(true)
+    try { downloadBlob(await downloadTraceableReport(result.analysis_run_id), `structicode-${result.analysis_run_id}.pdf`) }
+    catch (error) { setResult(current => ({ ...current, error })) }
+    finally { setReportLoading(false) }
   }
 
-  const handleSubmit = async (formData) => {
-    setLoading(true)
-    setResult(null)
-    setLastInput(formData)
-
-    try {
-      const json = await analyzeElement({ code, element, formData, seismic })
-      setResult(json)
-    } catch (error) {
-      console.error('Analyze Error:', error)
-      setResult({ request_status: 'error', error: { message: error.message } })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const downloadPDF = async () => {
-    if (!lastInput || !result) return
-    try {
-      const blob = await legacyPdf(
-        { ...lastInput, code, element }, result.legacy_unverified.result
-      )
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'analysis_report.pdf'
-      a.click()
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      console.error('PDF Download Error:', err)
-    }
-  }
-
-  const renderForm = () => {
-    switch (element) {
-      case 'beam': return <BeamForm onSubmit={handleSubmit} />
-      case 'column': return <ColumnForm onSubmit={handleSubmit} />
-      case 'slab': return <SlabForm onSubmit={handleSubmit} code={code} />
-      case 'staircase': return <StaircaseForm onSubmit={handleSubmit} />
-      case 'footing': return <FootingForm onSubmit={handleSubmit} />
-      case 'steel_column': return <SteelColumnForm onSubmit={handleSubmit} />
-      case 'steel_beam': return <SteelBeamForm onSubmit={handleSubmit} />
-      default: return null
-    }
-  }
-
-  const seismicZones = zoneOptionsMap[code] || []
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundImage: 'url("/column-load-bg.png")', // ✅ الصورة من public
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      padding: '40px'
-    }}>
-      <div style={{
-        maxWidth: '880px',
-        margin: 'auto',
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '20px',
-        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)'
-      }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>{t('home.title')}</h2>
-
-        {/* باقي الكود زي ما هو ... */}
-
-        {result?.request_status === 'success' && (
-          <div style={{ marginTop: '2rem' }}>
-            {/* ... */}
-            <p>Legacy calculation output is unverified.</p>
-            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-              <button onClick={downloadPDF} style={{
-                backgroundColor: '#2563eb',
-                color: 'white',
-                padding: '10px 24px',
-                borderRadius: '12px',
-                fontWeight: '600',
-                border: 'none',
-                cursor: 'pointer',
-                position: 'relative',
-                zIndex: 10
-              }}>
-                Download PDF Report
-              </button>
-            </div>
-          </div>
-        )}
+  return <section><header className="page-header"><div><p className="eyebrow">Element workflow</p><h1>Element Analysis</h1><p>Select a capability-backed route, enter inputs in their displayed contract units, review the explicit verification boundary, then download the server-owned traceable report.</p></div></header>
+    {capabilityError && <ErrorPanel error={capabilityError} onRetry={loadCapabilities} />}
+    {!capabilities && !capabilityError ? <LoadingState /> : capabilities && <div className="workspace-grid">
+      <aside className="workspace-sidebar"><section className="panel control-stack"><h2>1. Select route</h2>
+        <label className="field"><span className="field-label">Design-code family</span><select value={selectedFamilyId} onChange={handleFamily}>{capabilities.families.map(item => <option key={item.family_id} value={item.family_id}>{item.display_name} — {item.jurisdiction}</option>)}</select></label>
+        <label className="field"><span className="field-label">Element type</span><select value={selectedElement} onChange={handleElement}><option value="">Select an element</option>{elements.map(([id, label]) => { const item = elementCapability(family, id); const enabled = isElementSelectable(family, id); return <option key={id} value={id} disabled={!enabled}>{label} — {item?.status || 'UNKNOWN'}{enabled ? '' : ' (unavailable)'}</option> })}</select></label>
+        {capability && <CapabilityBadge status={capability.status} />}
+        <StatusNotice tone="warning" title="Seismic workflow"><p>Not implemented in the v1 engineering workflow. No seismic inputs are sent from this page.</p></StatusNotice>
+      </section>{family && <CapabilityPanel family={family} capability={capability} element={selectedElement} />}</aside>
+      <div className="workspace-content">{selectedElement && !selectable && <StatusNotice tone="warning" title="Route unavailable"><p>{capability?.note || 'This element route is not available for the selected family.'}</p></StatusNotice>}
+        {selectedElement && selectable && <section className="panel"><div className="section-heading"><div><p className="eyebrow">2. Input</p><h2>{elements.find(([id]) => id === selectedElement)?.[1]} inputs</h2></div>{capability && <CapabilityBadge status={capability.status} compact />}</div><FormForElement element={selectedElement} onSubmit={handleSubmit} disabled={loading} /></section>}
+        {loading && <LoadingState label="Running the validated v1 analysis…" />}<ElementResult result={result} reportLoading={reportLoading} onDownload={handleReport} />
       </div>
-    </div>
-  )
+    </div>}</section>
 }

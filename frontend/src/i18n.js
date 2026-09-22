@@ -3,16 +3,10 @@ import { initReactI18next } from 'react-i18next'
 import translationEN from './locales/en/translation.json'
 import translationAR from './locales/ar/translation.json'
 
-i18n.use(initReactI18next).init({
-  resources: {
-    en: { translation: translationEN },
-    ar: { translation: translationAR },
-  },
-  lng: 'en',
-  fallbackLng: 'en',
-  interpolation: {
-    escapeValue: false
-  }
-})
+const savedLanguage = typeof window !== 'undefined' ? localStorage.getItem('structicode-language') : null
 
+i18n.use(initReactI18next).init({
+  resources: { en: { translation: translationEN }, ar: { translation: translationAR } },
+  lng: savedLanguage === 'ar' ? 'ar' : 'en', fallbackLng: 'en', interpolation: { escapeValue: false },
+})
 export default i18n

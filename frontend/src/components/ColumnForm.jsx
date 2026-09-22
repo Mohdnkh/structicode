@@ -1,87 +1,9 @@
 import { useState } from 'react'
+import { Field, FormSection } from './workspace/FormControls'
 
-export default function ColumnForm({ onSubmit }) {
-  const [type, setType] = useState('Rectangular')
-  const [code, setCode] = useState('ACI')
-  const [b, setB] = useState('')
-  const [h, setH] = useState('')
-  const [L, setL] = useState('')
-  const [phi, setPhi] = useState('')
-  const [nBars, setNBars] = useState('')
-  const [s, setS] = useState('')
-  const [fc, setFc] = useState('')
-  const [fy, setFy] = useState('')
-  const [loads, setLoads] = useState({ axial: '', moment: '' })
-
-  const defaultValues = {
-    fc: 25,
-    fy: 420
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    const data = {
-      type,
-      code,
-      geometry: {
-        b: parseFloat(b),
-        h: parseFloat(h),
-        L: parseFloat(L)
-      },
-      reinforcement: {
-        barDiameter: parseFloat(phi),
-        barCount: parseInt(nBars),
-        tieSpacing: parseFloat(s)
-      },
-      materials: {
-        fc: parseFloat(fc) || defaultValues.fc,
-        fy: parseFloat(fy) || defaultValues.fy
-      },
-      loads: {
-        axial: parseFloat(loads.axial) || 0,
-        moment: parseFloat(loads.moment) || 0
-      }
-    }
-
-    onSubmit(data)
-  }
-
-  const columnTypes = ['Rectangular', 'Circular', 'Composite']
-  const codes = ['ACI', 'BS', 'Eurocode', 'AS', 'CSA', 'IS', 'Jordan', 'Egypt', 'Saudi', 'UAE', 'Turkey']
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <select value={type} onChange={e => setType(e.target.value)} className="input">
-          {columnTypes.map(t => <option key={t}>{t}</option>)}
-        </select>
-
-        
-
-        <input type="number" placeholder="Width b (cm)" value={b} onChange={e => setB(e.target.value)} className="input" />
-        <input type="number" placeholder="Depth h (cm)" value={h} onChange={e => setH(e.target.value)} className="input" />
-        <input type="number" placeholder="Height L (m)" value={L} onChange={e => setL(e.target.value)} className="input" />
-        <input type="number" placeholder="Rebar Diameter Φ (mm)" value={phi} onChange={e => setPhi(e.target.value)} className="input" />
-        <input type="number" placeholder="Number of Rebars n" value={nBars} onChange={e => setNBars(e.target.value)} className="input" />
-        <input type="number" placeholder="Tie Spacing s (cm)" value={s} onChange={e => setS(e.target.value)} className="input" />
-        <input type="number" placeholder="Concrete Strength fc (MPa)" value={fc} onChange={e => setFc(e.target.value)} className="input" />
-        <input type="number" placeholder="Steel Yield Strength fy (MPa)" value={fy} onChange={e => setFy(e.target.value)} className="input" />
-      </div>
-
-      <div className="pt-4 border-t">
-        <label className="block mb-2 font-semibold">Loads:</label>
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-          <input type="number" placeholder="Axial Load N (kN)" value={loads.axial} onChange={e => setLoads({ ...loads, axial: e.target.value })} className="input" />
-          <input type="number" placeholder="Moment M (kN·m)" value={loads.moment} onChange={e => setLoads({ ...loads, moment: e.target.value })} className="input" />
-        </div>
-      </div>
-
-      <div className="text-center pt-6">
-        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold">
-          Analyze Column
-        </button>
-      </div>
-    </form>
-  )
+export default function ColumnForm({ onSubmit, disabled }) {
+  const [v, setV] = useState({ type:'Rectangular', b:'', h:'', L:'', phi:'', nBars:'', s:'', fc:'25', fy:'420', axial:'', moment:'' })
+  const set = key => e => setV(x => ({...x,[key]:e.target.value}))
+  const submit = e => { e.preventDefault(); onSubmit({ type:v.type, geometry:{b:Number(v.b),h:Number(v.h),L:Number(v.L)}, reinforcement:{barDiameter:Number(v.phi),barCount:Number(v.nBars),tieSpacing:Number(v.s)}, materials:{fc:Number(v.fc),fy:Number(v.fy)}, loads:{axial:Number(v.axial)||0,moment:Number(v.moment)||0} }) }
+  return <form onSubmit={submit}><FormSection title="Geometry and reinforcement"><Field label="Column type"><select value={v.type} onChange={set('type')}><option>Rectangular</option><option>Circular</option><option>Composite</option></select></Field><Field label="Width (cm)"><input required type="number" min="0.01" step="any" value={v.b} onChange={set('b')} /></Field><Field label="Depth (cm)"><input required type="number" min="0.01" step="any" value={v.h} onChange={set('h')} /></Field><Field label="Height (m)"><input required type="number" min="0.01" step="any" value={v.L} onChange={set('L')} /></Field><Field label="Bar diameter (mm)"><input required type="number" min="0.01" step="any" value={v.phi} onChange={set('phi')} /></Field><Field label="Bar count"><input required type="number" min="1" step="1" value={v.nBars} onChange={set('nBars')} /></Field><Field label="Tie spacing (cm)"><input required type="number" min="0.01" step="any" value={v.s} onChange={set('s')} /></Field><Field label="Concrete strength (MPa)"><input required type="number" min="0.01" step="any" value={v.fc} onChange={set('fc')} /></Field><Field label="Steel yield strength (MPa)"><input required type="number" min="0.01" step="any" value={v.fy} onChange={set('fy')} /></Field></FormSection><FormSection title="Applied actions"><Field label="Axial load (kN)"><input required type="number" min="0" value={v.axial} onChange={set('axial')} /></Field><Field label="Moment (kN·m)"><input type="number" value={v.moment} onChange={set('moment')} /></Field></FormSection><div className="form-actions"><button className="button button-primary" disabled={disabled}>{disabled?'Analyzing…':'Run column analysis'}</button></div></form>
 }
