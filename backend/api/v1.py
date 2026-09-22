@@ -39,6 +39,7 @@ from .reporting.run_store import RUN_STORE
 from .auth.security import EnterpriseError, current_user_from_request
 from .data.database import session_scope
 from .data.services import LOCAL_ENTITLEMENTS, membership_for_project, persist_run
+from .security.limits import validate_element_input, validate_structure_complexity
 
 
 logger = logging.getLogger(__name__)
@@ -144,6 +145,16 @@ def _legacy_element_result(request: ElementRequest, data: dict) -> dict:
 @router.post("/element", response_model=ElementResponse)
 def analyze_element_v1(request: ElementRequest, http_request: Request):
     project_id, user_id = _project_context(request.project_id, http_request)
+    try:
+        validate_element_input(request)
+    except EnterpriseError as exc:
+        if exc.code == "INPUT_MAGNITUDE_LIMIT":
+            raise ContractError(
+                "NORMALIZATION_ERROR",
+                "Input cannot be normalized to finite canonical units",
+                422,
+            ) from exc
+        raise
     value = request.input
     if request.seismic is not None:
         raise _unsupported("Seismic analysis is not implemented in the v1 contract")
@@ -209,6 +220,7 @@ def analyze_element_v1(request: ElementRequest, http_request: Request):
 @router.post("/structure", response_model=StructureResponse)
 def analyze_structure_v1(request: StructureRequest, http_request: Request):
     project_id, user_id = _project_context(request.project_id, http_request)
+    validate_structure_complexity(request)
     if not supports_legacy_structure(request.code_id):
         raise _unsupported(f"The {request.code_id.value} family has no structure-level legacy analysis path")
     if any(section.inertia_mm4 is not None for section in request.sections):

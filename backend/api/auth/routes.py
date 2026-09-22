@@ -1,12 +1,12 @@
 """Auth endpoints for the explicitly local P9 identity foundation."""
 from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from backend.api.data.database import session_scope
 from backend.api.data.models import MembershipRole, Organization, OrganizationMembership, User
-from .security import EnterpriseError, auth_secret, create_access_token, current_user, hash_password, normalize_email, verify_password
+from .security import DUMMY_PASSWORD_HASH, EnterpriseError, auth_secret, create_access_token, current_user, hash_password, normalize_email, verify_password
 
 router=APIRouter(prefix="/api/v1/auth",tags=["v1 local auth"])
 class Model(BaseModel): model_config=ConfigDict(extra="forbid")
@@ -17,7 +17,8 @@ class AuthResponse(Model): access_token:str; token_type:str="bearer"; user:UserR
 
 def user_response(user:User)->UserResponse: return UserResponse(id=user.id,email=user.email,display_name=user.display_name,is_active=user.is_active)
 @router.post("/register",response_model=AuthResponse,status_code=201)
-def register(body:RegisterRequest):
+def register(body:RegisterRequest, response: Response):
+    response.headers["Cache-Control"] = "no-store"
     auth_secret()
     email=normalize_email(str(body.email))
     try:
@@ -31,13 +32,17 @@ def register(body:RegisterRequest):
     except IntegrityError as exc: raise EnterpriseError("EMAIL_ALREADY_REGISTERED","Registration could not be completed",409) from exc
     except Exception as exc: raise EnterpriseError("PERSISTENCE_ERROR","Local data storage is unavailable",503) from exc
 @router.post("/login",response_model=AuthResponse)
-def login(body:LoginRequest):
+def login(body:LoginRequest, response: Response):
+    response.headers["Cache-Control"] = "no-store"
     auth_secret()
     email=normalize_email(str(body.email))
     try:
         with session_scope() as session:
             user=session.scalar(select(User).where(User.email==email))
-            if user is None or not user.is_active or not verify_password(body.password,user.password_hash): raise EnterpriseError("INVALID_CREDENTIALS","Invalid email or password",401)
+            if user is None:
+                verify_password(body.password, DUMMY_PASSWORD_HASH)
+                raise EnterpriseError("INVALID_CREDENTIALS","Invalid email or password",401)
+            if not user.is_active or not verify_password(body.password,user.password_hash): raise EnterpriseError("INVALID_CREDENTIALS","Invalid email or password",401)
             session.expunge(user); return AuthResponse(access_token=create_access_token(user.id),user=user_response(user))
     except EnterpriseError: raise
     except Exception as exc: raise EnterpriseError("PERSISTENCE_ERROR","Local data storage is unavailable",503) from exc

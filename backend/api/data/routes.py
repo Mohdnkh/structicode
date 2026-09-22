@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from backend.api.auth.security import EnterpriseError, current_user
 from backend.api.data.database import get_db
@@ -40,10 +40,15 @@ def project(project_id:str,user:User=Depends(current_user),db:Session=Depends(ge
 @router.patch("/projects/{project_id}",response_model=ProjectResponse)
 def update_project(project_id:str,body:ProjectUpdate,user:User=Depends(current_user),db:Session=Depends(get_db)):
     item=membership_for_project(db,user.id,project_id)
-    if body.expected_version is not None and body.expected_version!=item.version:raise EnterpriseError("PROJECT_VERSION_CONFLICT","Project was changed by another request",409)
-    if body.name is not None:item.name=body.name.strip()
-    if body.description is not None:item.description=body.description.strip() or None
-    item.version+=1;item.updated_by_user_id=user.id;db.flush();return project_response(item)
+    expected = body.expected_version if body.expected_version is not None else item.version
+    values = {"version": expected + 1, "updated_by_user_id": user.id}
+    if body.name is not None: values["name"] = body.name.strip()
+    if body.description is not None: values["description"] = body.description.strip() or None
+    changed = db.execute(update(Project).where(Project.id == project_id, Project.version == expected).values(**values))
+    if changed.rowcount != 1:
+        raise EnterpriseError("PROJECT_VERSION_CONFLICT","Project was changed by another request",409)
+    db.flush(); db.expire(item); db.refresh(item)
+    return project_response(item)
 @router.get("/projects/{project_id}/analysis-runs",response_model=list[RunSummary])
 def project_runs(project_id:str,limit:int=Query(default=25,ge=1,le=100),user:User=Depends(current_user),db:Session=Depends(get_db)):
     membership_for_project(db,user.id,project_id);rows=db.scalars(select(PersistentAnalysisRun).where(PersistentAnalysisRun.project_id==project_id).order_by(PersistentAnalysisRun.created_at.desc()).limit(limit)).all();return [RunSummary(run_id=x.run_id,analysis_kind=x.analysis_kind,code_family_id=x.code_family_id,verification_status=x.verification_status,created_at=utc(x.created_at),input_sha256=x.input_sha256,result_sha256=x.result_sha256,record_sha256=x.record_sha256) for x in rows]

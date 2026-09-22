@@ -5,9 +5,11 @@
 Copy `.env.example` values into your local environment. Set a unique local `STRUCTICODE_AUTH_SECRET`; the repository does not provide a fallback secret.
 
 ```powershell
-$env:STRUCTICODE_AUTH_SECRET = "replace-with-a-local-secret"
+$env:STRUCTICODE_AUTH_SECRET = "replace-with-a-local-secret-at-least-32-bytes"
 npm run db:migrate
 ```
+
+The placeholder is intentionally at least 32 UTF-8 bytes; replace it with a unique local value before using authentication. Never commit a real secret.
 
 Activate the repository virtual environment before running these commands. The root scripts intentionally use environment-resolved `python` and `python -m alembic`, so they work on Windows, macOS, and Linux without embedding `.venv` path syntax.
 

@@ -4,9 +4,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.background import BackgroundTask
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
+import logging
+from uuid import uuid4
 from pathlib import Path
 
 # ✅ الاستيرادات من backend.api لأن utils و engine بداخل api
@@ -27,6 +30,9 @@ from backend.api.auth import router as auth_router, EnterpriseError
 from backend.api.data import routes as data_routes
 from backend.api.reporting import report_api
 from backend.api.domain.schemas import ErrorBody, ErrorEnvelope, ValidationDetail, VerificationStatus
+from backend.api.security import RateLimitMiddleware, RequestSizeLimitMiddleware, SecurityHeadersMiddleware, approved_cors_origins
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -79,13 +85,30 @@ async def v1_http_error(request: Request, exc: StarletteHTTPException):
     )
     return JSONResponse(status_code=exc.status_code, content=body.model_dump(mode="json"))
 
+@app.exception_handler(Exception)
+async def unexpected_error(request: Request, exc: Exception):
+    logger.exception("Unhandled request failure for %s", request.url.path)
+    if request.url.path.startswith("/api/v1/"):
+        body = ErrorEnvelope(
+            verification_status=VerificationStatus.NOT_EVALUATED,
+            error=ErrorBody(code="INTERNAL_ERROR", message="The request could not be completed"),
+        )
+        return JSONResponse(status_code=500, content=body.model_dump(mode="json"))
+    return JSONResponse(status_code=500, content={"status": "error", "message": "The request could not be completed"})
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=approved_cors_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
+# Starlette wraps middleware in reverse registration order. Register the
+# security header layer last so CORS preflight and rejected responses receive
+# the same browser-safe headers as normal responses.
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 class AnalysisInput(BaseModel):
     code: str
@@ -154,22 +177,33 @@ async def analyze_element(payload: AnalysisInput):
             }
         }
 
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    except Exception:
+        logger.exception("Legacy /analyze failed")
+        return {"status": "error", "message": "Legacy analysis could not be completed"}
 
 @app.post("/generate-pdf")
 async def generate_pdf_report(request: PDFRequest):
+    filename = f"legacy-{uuid4().hex}.pdf"
+    path = None
     try:
-        filename = "report.pdf"
         path = generate_pdf(request.data, request.result, filename)
         if not os.path.exists(path):
             raise HTTPException(status_code=500, detail="PDF not generated")
+        def cleanup() -> None:
+            if path:
+                try:
+                    Path(path).unlink(missing_ok=True)
+                except OSError:
+                    logger.warning("Could not remove temporary legacy report", exc_info=True)
         return FileResponse(
             path, media_type="application/pdf", filename=filename,
             headers={"X-Structicode-Report-Status": "LEGACY_CLIENT_SUPPLIED_UNVERIFIED"},
+            background=BackgroundTask(cleanup),
         )
-    except Exception as e:
-        print("PDF generation failed:", e)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Legacy /generate-pdf failed")
         raise HTTPException(status_code=500, detail="Legacy report generation failed")
 
 @app.get("/health")

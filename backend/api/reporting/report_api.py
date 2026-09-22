@@ -14,13 +14,13 @@ def _persistent_row(run_id:str):
     try:
         with session_scope() as session:
             row=session.get(PersistentAnalysisRun,run_id)
-            return row is not None
-    except Exception:
-        return False
+            return row
+    except Exception as exc:
+        raise EnterpriseError("PERSISTENCE_ERROR","Local data storage is unavailable",503) from exc
 
 def _run_for_request(run_id:str,request:Request)->tuple[AnalysisRunRecord,tuple|None]:
     # Protected database rows always win over the anonymous in-memory store.
-    if _persistent_row(run_id):
+    if _persistent_row(run_id) is not None:
         user=current_user_from_request(request)
         try:
             with session_scope() as session:
@@ -32,7 +32,9 @@ def _run_for_request(run_id:str,request:Request)->tuple[AnalysisRunRecord,tuple|
     if record is None: raise HTTPException(status_code=404,detail="Analysis run was not found")
     return record,None
 @router.get("/api/v1/analysis-runs/{run_id}",response_model=AnalysisRunRecord)
-def get_analysis_run(run_id:str,request:Request)->AnalysisRunRecord:return _run_for_request(run_id,request)[0]
+def get_analysis_run(run_id:str,request:Request,response:Response)->AnalysisRunRecord:
+    response.headers["Cache-Control"]="no-store"
+    return _run_for_request(run_id,request)[0]
 @router.get("/api/v1/reports/{run_id}.pdf")
 def get_report(run_id:str,request:Request)->Response:
     record,ownership=_run_for_request(run_id,request)
@@ -45,4 +47,4 @@ def get_report(run_id:str,request:Request)->Response:
                 row,_=load_persistent_run(session,user_id,run_id);report_record(session,row,user_id,content,REPORT_SCHEMA_VERSION)
         except EnterpriseError: raise
         except Exception as exc: raise EnterpriseError("PERSISTENCE_ERROR","Report generation could not be recorded",503) from exc
-    return Response(content=content,media_type="application/pdf",headers={"Content-Disposition":f'attachment; filename="structicode-{record.run_id}.pdf"',"X-Analysis-Run-Id":record.run_id,"X-Report-Schema-Version":REPORT_SCHEMA_VERSION})
+    return Response(content=content,media_type="application/pdf",headers={"Cache-Control":"no-store","Content-Disposition":f'attachment; filename="structicode-{record.run_id}.pdf"',"X-Analysis-Run-Id":record.run_id,"X-Report-Schema-Version":REPORT_SCHEMA_VERSION})

@@ -12,13 +12,14 @@ from backend.api.data.database import session_scope
 from backend.api.data.models import User
 
 ALGORITHM="HS256"; ISSUER="structicode-local"; AUDIENCE="structicode-local"; PASSWORDS=CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated=["bcrypt"])
+DUMMY_PASSWORD_HASH = PASSWORDS.hash("structicode-invalid-credential-dummy")
 
 class EnterpriseError(Exception):
     def __init__(self, code: str, message: str, status_code: int=400): self.code=code; self.message=message; self.status_code=status_code
 
 def auth_secret() -> str:
     value=getenv("STRUCTICODE_AUTH_SECRET","")
-    if not value.strip(): raise EnterpriseError("AUTH_NOT_CONFIGURED","Local authentication is not configured",503)
+    if not value.strip() or len(value.encode("utf-8")) < 32: raise EnterpriseError("AUTH_NOT_CONFIGURED","Local authentication is not configured with a sufficiently strong secret",503)
     return value
 
 def normalize_email(value: str) -> str: return value.strip().casefold()
