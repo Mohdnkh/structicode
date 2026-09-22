@@ -63,8 +63,8 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 | P5 | Verified Steel Core | 20-25 h | DEFERRED — SOURCE BLOCKED | - | Exact ANSI/AISC 360-22 provisions, applicable errata, authoritative section properties, and independent reference examples remain unavailable. Legacy steel safety claims are contained; no steel rule is VERIFIED. Verified P5 exit gate remains unmet. |
 | P6 | Design-Code Registry & International Architecture | 25-29 h | PUSHED | - | Typed registry and read-only capability API implemented and merged to main. P4/P5 remain deferred and no design module became VERIFIED. |
 | P7 | Engineering Reports & Traceability | 29-33 h | PUSHED | - | Server-owned v1 run records, trace hashes, bounded ephemeral store, run lookup, and in-memory PDF reports implemented. P4/P5 remain deferred; no legacy output is promoted to VERIFIED. |
-| P8 | Enterprise UI/UX & Engineering Workspace | 33-39 h | READY FOR REVIEW | - | - |
-| P9 | Projects, Identity & Enterprise Data Foundation | 39-42 h | HOLD | - | - |
+| P8 | Enterprise UI/UX & Engineering Workspace | 33-39 h | PUSHED | - | - |
+| P9 | Projects, Identity & Enterprise Data Foundation | 39-42 h | READY FOR REVIEW | - | Local-first SQLAlchemy/Alembic identity, project ownership, persistent P7 records, and minimal project UI are implemented. No calculation capability changed. |
 | P10 | QA, Security & Reliability Gate | 42-45 h | HOLD | - | - |
 | P11 | Product Acceptance & Documentation | 45-47 h | HOLD | - | - |
 | P12 | Deployment Decision & Release Packaging | 47-48 h | HOLD | - | - |
