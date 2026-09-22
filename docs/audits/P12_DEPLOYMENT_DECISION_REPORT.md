@@ -9,6 +9,7 @@ P12 prepares a provider-neutral release package and documents the exact owner ga
 ## Repository facts
 
 - Main base: `ceefb11a91fc64ab2c55ed9dd9dfb8dab4105918`.
+- P12 implementation commit: `444e453ce0fdce6c380192187596f3e45fade532`.
 - P11 was merged before this phase; the P12 branch starts from that main head.
 - FastAPI can serve `frontend/dist` and React client routes through the fallback route.
 - Local storage defaults to SQLite; PostgreSQL support uses `psycopg2-binary` and Alembic.
