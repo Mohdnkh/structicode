@@ -34,14 +34,6 @@ python -m pip install -r backend/requirements-dev.txt
 python -m pip check
 ```
 
-On a Unix-like system with Python 3.12 installed:
-
-```sh
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip check
-```
-
 Keep the virtual environment active when running the root backend or combined development scripts. They invoke `python` from the active environment. `.venv` is ignored by Git.
 
 ## Configure local environment and migrate

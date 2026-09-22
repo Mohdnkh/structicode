@@ -63,12 +63,11 @@ def test_product_matrix_rows_match_each_registry_family():
         assert row[6] == STATUS_PRESENTATION[family.structure_analysis.status.value]
         assert row[7] == STATUS_PRESENTATION[family.structure_design.status.value]
         assert row[8] == STATUS_PRESENTATION[family.load_combination.status.value]
-        seismic = STATUS_PRESENTATION[family.seismic.status.value]
-        assert row[9].startswith(seismic)
-        if family.seismic.status == CapabilityStatus.NOT_IMPLEMENTED:
-            assert row[9] == seismic
-        else:
-            assert row[9].endswith("(v1 false)")
+        expected_seismic = (
+            "N/I" if family.seismic.status == CapabilityStatus.NOT_IMPLEMENTED
+            else f"{STATUS_PRESENTATION[family.seismic.status.value]} (v1 false)"
+        )
+        assert row[9] == expected_seismic
         assert row[10] == target_cell(family)
 
 

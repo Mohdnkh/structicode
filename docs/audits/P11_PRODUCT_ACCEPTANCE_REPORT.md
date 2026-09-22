@@ -12,7 +12,7 @@ The JavaScript toolchain reported Node.js `v24.11.1` and npm `11.14.1`, using `h
 
 ### Row-level capability validation
 
-`backend/tests/test_p11_product_acceptance.py` now parses each row in `docs/PRODUCT_CAPABILITY_MATRIX.md` and compares it with the corresponding P6 registry record. It checks family ID, display name, jurisdiction, metadata confidence, concrete aggregate status, steel aggregate status, structure analysis/design status, load-combination status, seismic prefix and v1 flag, and the source-blocked target. Separate assertions derive each element status from the registry's element records, including the explicit `STATUS_PRESENTATION` mapping used by the product matrix. This closes the previous broad phrase-only coverage gap.
+`backend/tests/test_p11_product_acceptance.py` now parses each row in `docs/PRODUCT_CAPABILITY_MATRIX.md` and compares it with the corresponding P6 registry record. It checks family ID, display name, jurisdiction, metadata confidence, concrete aggregate status, steel aggregate status, structure analysis/design status, load-combination status, the exact seismic cell derived as either `N/I` or `<status> (v1 false)`, and the source-blocked target. Separate assertions derive each element status from the registry's element records, including the explicit `STATUS_PRESENTATION` mapping used by the product matrix. This closes the previous broad phrase-only coverage gap.
 
 ### Documentation consistency
 
