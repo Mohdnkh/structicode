@@ -1,39 +1,60 @@
 # Local Development
 
-This guide describes the local development workflow verified during P1. Run commands from the repository root. P1 does not deploy the application or validate structural engineering results.
+This guide describes the reproducible local release-candidate workflow. Run commands from the repository root. P11 acceptance is local only and does not deploy the application or validate structural engineering results.
 
 ## Prerequisites
 
 | Tool | Tested version | Notes |
 | --- | --- | --- |
-| Python | 3.12.10 | Python 3.11 was unavailable on the test host. Other versions were not tested. |
+| Python | 3.12 | Required acceptance runtime; the recorded host used 3.12.10. |
 | pip | 25.0.1 | Supplied in the Python 3.12 virtual environment. |
-| Node.js | 24.11.1 | Used for the clean install, Vite, and build. |
-| npm | 11.14.1 | The sole supported JavaScript package manager. |
+| Node.js | 20 LTS or newer | The acceptance baseline is Node 20; the recorded host used 24.11.1. |
+| npm | Bundled with Node 20+ | The sole supported JavaScript package manager. |
 
-The verified host was Windows with PowerShell 7.6.5. The shell commands below also show a Unix-like virtual environment setup, which was not exercised during P1.
+The commands below present a platform-neutral workflow first, followed by Windows PowerShell notes. The verified host was Windows with PowerShell 7.6.5.
 
 ## Install Python dependencies
 
-Create and activate a virtual environment in the repository root. On Windows PowerShell:
-
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r backend/requirements.txt
-python -m pip check
-```
-
-On a Unix-like system with Python 3.12 installed:
+Create and activate a virtual environment in the repository root:
 
 ```sh
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r backend/requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r backend/requirements-dev.txt
+python -m pip check
+```
+
+On Windows PowerShell:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r backend/requirements-dev.txt
 python -m pip check
 ```
 
 Keep the virtual environment active when running the root backend or combined development scripts. They invoke `python` from the active environment. `.venv` is ignored by Git.
+
+## Configure local environment and migrate
+
+Use an isolated SQLite URL for acceptance or local experiments. Do not point it at a developer database you need to preserve. Set a dedicated local auth secret of at least 32 bytes:
+
+```sh
+export STRUCTICODE_DATABASE_URL=sqlite:///./structicode-local.sqlite3
+export STRUCTICODE_AUTH_SECRET=replace-with-a-local-secret-at-least-32-bytes
+python -m alembic upgrade head
+```
+
+PowerShell equivalents are:
+
+```powershell
+$env:STRUCTICODE_DATABASE_URL = "sqlite:///./structicode-local.sqlite3"
+$env:STRUCTICODE_AUTH_SECRET = "replace-with-a-local-secret-at-least-32-bytes"
+python -m alembic upgrade head
+```
+
+The auth variables are optional for anonymous analysis but required for registration, login, and project persistence.
 
 ## Install JavaScript dependencies
 
@@ -98,14 +119,13 @@ npm run build
 
 The build writes to `frontend/dist`. Installing dependencies and building are separate commands. `dist`, `node_modules`, `.venv`, Python bytecode, and generated reports are ignored by Git.
 
-## P2 contract checks
-
-Install the separate development test requirements into the active virtual environment:
+## Tests and acceptance checks
 
 ```sh
-python -m pip install -r backend/requirements-dev.txt
 python -m pytest backend/tests -q
-node --test frontend/tests/api-adapters.test.mjs
+node --test frontend/tests/*.test.mjs
+npm run build
+npm run verify:backend
 ```
 
-The Structure Designer and Analyzer now use the versioned `/api/v1` analysis routes through the shared frontend client. See [API_CONTRACTS.md](API_CONTRACTS.md) and [UNIT_SYSTEM.md](UNIT_SYSTEM.md) for request units and trust semantics. The tests verify transport and normalization, not structural engineering accuracy. The Structure Designer still lacks support and load editing controls; its default all-free model is rejected by v1 validation. The existing report path remains a legacy compatibility route. Deployment is reserved for P12.
+The Structure Designer and Analyzer use the versioned `/api/v1` analysis routes through the shared frontend client. The Structure Designer supports node creation, member connection, support editing, and minimal model controls; backend validation remains authoritative for stability and complexity, and slab transfer is unavailable. See [API_CONTRACTS.md](API_CONTRACTS.md) and [UNIT_SYSTEM.md](UNIT_SYSTEM.md) for request units and trust semantics. The tests verify transport and normalization, not structural engineering accuracy. The primary report path is `GET /api/v1/reports/{run_id}.pdf`; `POST /generate-pdf` remains legacy compatibility only. Deployment is reserved for P12.

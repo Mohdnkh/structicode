@@ -107,8 +107,16 @@ Finite inputs that overflow during unit normalization also return a structured H
 
 `request_status` describes software handling (`success` or `error`). `verification_status` separately describes engineering trust: `VERIFIED` is reserved for a later validated capability; current legacy output is `UNVERIFIED`; rejected or unevaluated requests use `NOT_EVALUATED`; and an unsupported capability uses `NOT_IMPLEMENTED`. The typed `CheckState` reserves `PASS`, `FAIL`, `NOT_EVALUATED`, and `NOT_VERIFIED`; P2 emits no authoritative normalized PASS/FAIL engineering check.
 
+## Capability and persistence endpoints
+
+`GET /api/v1/capabilities` and `GET /api/v1/capabilities/{family_id}` expose the P6 registry, including per-element, structure-analysis, structure-design, load-combination, seismic, metadata-confidence, warnings, and source-blocked targets. The response is the source for UI enablement; a route flag does not mean engineering verification.
+
+`GET /api/v1/analysis-runs/{run_id}` and `GET /api/v1/reports/{run_id}.pdf` read a server-owned run. Anonymous records are available from the bounded process-local store without a token and are marked `EPHEMERAL`. Project-owned records require a bearer token and current tenant membership and are marked `PROJECT_PERSISTED`; their report is regenerated from the immutable record and the PDF bytes are not durable blobs.
+
+Local identity endpoints are `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, and `GET /api/v1/auth/me`. Organization and project endpoints are `GET /api/v1/organizations`, `GET/POST /api/v1/projects`, `GET/PATCH /api/v1/projects/{project_id}`, and `GET /api/v1/projects/{project_id}/analysis-runs`. Foreign resources return a non-disclosing 404. Local JWT authentication is a development foundation, not production identity.
+
 ## Migration and local checks
 
-The frontend API client is `frontend/src/api/client.js`, and its form-to-request mapping is `frontend/src/api/adapters.js`. The pages now call v1 through that client. Existing `/analyze`, `/api/structure/analyze`, and `/generate-pdf` remain compatibility routes, retaining their old contract and trust limitations. PDF report architecture and trust belong to P7. Structure Designer controls and Analyzer layout remain incomplete and belong to P8.
+The frontend API client is `frontend/src/api/client.js`, and its form-to-request mapping is `frontend/src/api/adapters.js`. The pages call v1 through that client. Existing `/analyze`, `/api/structure/analyze`, and `/generate-pdf` remain compatibility routes, retaining their old contract and trust limitations; `/generate-pdf` is explicitly legacy/client-supplied/unverified. Request-size and model-complexity limits are enforced by P10 middleware. Structure Designer controls and Analyzer layout are the current P8 workspace, while P9 owns project persistence and P10 owns runtime protection.
 
 From the repository root with the documented virtual environment and npm dependencies installed, run `python -m pytest backend/tests -q` for the backend unit/contract suite and `node --test frontend/tests/api-adapters.test.mjs` for frontend mapping tests. These tests check contract behavior and transport units; they do not certify structural calculations.
