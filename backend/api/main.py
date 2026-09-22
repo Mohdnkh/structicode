@@ -23,6 +23,8 @@ from backend.api.engine.concrete.column import analyze_concrete_column
 from backend.api.engine.concrete.footing import analyze_concrete_footing
 from backend.api.engine.concrete.staircase import analyze_concrete_staircase
 from backend.api import capabilities_api, v1
+from backend.api.auth import router as auth_router, EnterpriseError
+from backend.api.data import routes as data_routes
 from backend.api.reporting import report_api
 from backend.api.domain.schemas import ErrorBody, ErrorEnvelope, ValidationDetail, VerificationStatus
 
@@ -34,7 +36,14 @@ app.include_router(structure_router.router, prefix="/api")
 app.include_router(v1.router)
 app.include_router(capabilities_api.router)
 app.include_router(report_api.router)
+app.include_router(auth_router)
+app.include_router(data_routes.router)
 
+
+@app.exception_handler(EnterpriseError)
+async def enterprise_error(request: Request, exc: EnterpriseError):
+    body = ErrorEnvelope(verification_status=VerificationStatus.NOT_EVALUATED, error=ErrorBody(code=exc.code, message=exc.message))
+    return JSONResponse(status_code=exc.status_code, content=body.model_dump(mode="json"))
 
 @app.exception_handler(v1.ContractError)
 async def v1_contract_error(request: Request, exc: v1.ContractError):

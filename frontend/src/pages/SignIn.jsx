@@ -1,0 +1,13 @@
+import { useState } from 'react'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useAuth } from '../context/AuthContext'
+import { ErrorPanel, StatusNotice } from '../components/workspace/StatusNotice'
+
+export default function SignIn() {
+  const { t } = useTranslation(); const auth = useAuth(); const navigate = useNavigate(); const location = useLocation()
+  const [mode, setMode] = useState('signIn'); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [displayName, setDisplayName] = useState(''); const [error, setError] = useState(null); const [loading, setLoading] = useState(false)
+  if (auth.authenticated) return <Navigate to={location.state?.from || '/projects'} replace />
+  const submit = async event => { event.preventDefault(); setError(null); setLoading(true); try { if (mode === 'signIn') await auth.signIn({ email, password }); else await auth.register({ email, password, display_name: displayName }); navigate(location.state?.from || '/projects', { replace: true }) } catch (reason) { setError(reason) } finally { setLoading(false) } }
+  return <section className="narrow-page"><header className="page-header"><div><p className="eyebrow">{t('identity.eyebrow')}</p><h1>{mode === 'signIn' ? t('identity.sign_in') : t('identity.register')}</h1><p>{t('identity.local_notice')}</p></div></header><section className="panel"><form className="control-stack" onSubmit={submit}><label className="field"><span className="field-label">{t('identity.email')}</span><input required type="email" value={email} onChange={event => setEmail(event.target.value)} /></label>{mode === 'register' && <label className="field"><span className="field-label">{t('identity.display_name')}</span><input required value={displayName} onChange={event => setDisplayName(event.target.value)} /></label>}<label className="field"><span className="field-label">{t('identity.password')}</span><input required minLength="12" maxLength="128" type="password" value={password} onChange={event => setPassword(event.target.value)} /></label><button className="button button-primary" disabled={loading}>{loading ? t('common.loading') : mode === 'signIn' ? t('identity.sign_in') : t('identity.register')}</button></form><button className="button button-secondary" type="button" onClick={() => { setMode(mode === 'signIn' ? 'register' : 'signIn'); setError(null) }}>{mode === 'signIn' ? t('identity.need_account') : t('identity.have_account')}</button>{error && <ErrorPanel error={error} />}</section><StatusNotice tone="warning" title={t('identity.foundation_title')}><p>{t('identity.foundation_detail')}</p></StatusNotice></section>
+}

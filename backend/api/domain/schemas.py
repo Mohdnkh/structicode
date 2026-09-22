@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Union
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
@@ -31,6 +32,11 @@ class VerificationStatus(StrEnum):
     UNVERIFIED = "UNVERIFIED"
     NOT_EVALUATED = "NOT_EVALUATED"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
+
+
+class PersistenceState(StrEnum):
+    EPHEMERAL = "EPHEMERAL"
+    PROJECT_PERSISTED = "PROJECT_PERSISTED"
 
 
 class CheckState(StrEnum):
@@ -189,6 +195,7 @@ class ElementRequest(StrictModel):
     code_id: DesignCode
     input: ElementInput
     seismic: SeismicInput | None = None
+    project_id: UUID | None = None
 
     @field_validator("code_id", mode="before")
     @classmethod
@@ -265,6 +272,7 @@ class StructureRequest(StrictModel):
     nodes: list[NodeInput] = Field(min_length=2)
     members: list[MemberInput] = Field(min_length=1)
     slabs: list[SlabGeometryInput] = Field(default_factory=list)
+    project_id: UUID | None = None
 
     @field_validator("code_id", mode="before")
     @classmethod
@@ -473,6 +481,8 @@ class ElementResponse(StrictModel):
     legacy_unverified: LegacyElementOutput
     warnings: list[str] = Field(default_factory=list)
     analysis_run_id: Identifier
+    persistence_state: PersistenceState = PersistenceState.EPHEMERAL
+    project_id: UUID | None = None
 
 
 class CanonicalDisplacement(StrictModel):
@@ -526,6 +536,8 @@ class StructureResponse(StrictModel):
     legacy_unverified: LegacyStructureOutput
     warnings: list[str] = Field(default_factory=list)
     analysis_run_id: Identifier
+    persistence_state: PersistenceState = PersistenceState.EPHEMERAL
+    project_id: UUID | None = None
 
 
 class ValidationDetail(StrictModel):

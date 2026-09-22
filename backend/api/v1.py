@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from .domain.design_code_registry import (
     CombinationProfile, get_family, legacy_name,
@@ -18,7 +18,7 @@ from .domain.schemas import (
     CanonicalMemberForces, CanonicalReaction,
     ColumnInput, ElementRequest, ElementResponse, FootingInput,
     LegacyElementOutput, LegacyStructureOutput, SlabInput, StaircaseInput,
-    StructureRequest, StructureResponse, VerificationStatus,
+    StructureRequest, StructureResponse, VerificationStatus, PersistenceState,
 )
 from .domain.units import Dimension as D, to_canonical
 from .engine.code_router import get_code_handler
@@ -34,7 +34,11 @@ from .engine.structure_analyzer import (
     SolverInputError, SolverNumericalError, StructureAnalyzer,
     StructureUnstableError, UnsupportedSlabError,
 )
-from .reporting.trace import create_element_run, create_structure_run
+from .reporting.trace import create_element_record, create_structure_record
+from .reporting.run_store import RUN_STORE
+from .auth.security import EnterpriseError, current_user_from_request
+from .data.database import session_scope
+from .data.services import LOCAL_ENTITLEMENTS, membership_for_project, persist_run
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +58,39 @@ class ContractError(Exception):
 
 def _unsupported(message: str) -> ContractError:
     return ContractError("NOT_IMPLEMENTED", message, 400, VerificationStatus.NOT_IMPLEMENTED)
+
+
+def _project_context(project_id, http_request: Request):
+    """Authorize a project before any engineering calculation begins."""
+    if project_id is None:
+        return None, None
+    user = current_user_from_request(http_request)
+    try:
+        with session_scope() as session:
+            project = membership_for_project(session, user.id, str(project_id))
+            return project.id, user.id
+    except EnterpriseError:
+        raise
+    except Exception as exc:
+        raise EnterpriseError("PERSISTENCE_ERROR", "Local data storage is unavailable", 503) from exc
+
+
+def _store_record(record, project_id: str | None, user_id: str | None) -> tuple[PersistenceState, str | None]:
+    if project_id is None:
+        RUN_STORE.put(record)
+        return PersistenceState.EPHEMERAL, None
+    try:
+        with session_scope() as session:
+            project = membership_for_project(session, user_id, project_id)
+            if not LOCAL_ENTITLEMENTS.can_persist_analysis_run(user_id, project_id):
+                raise EnterpriseError("ENTITLEMENT_DENIED", "Project run persistence is not available", 403)
+            persist_run(session, record, project, user_id)
+        return PersistenceState.PROJECT_PERSISTED, project_id
+    except EnterpriseError:
+        raise
+    except Exception as exc:
+        logger.exception("Project run persistence failed")
+        raise EnterpriseError("PERSISTENCE_ERROR", "Analysis could not be saved to the selected project", 503) from exc
 
 
 def _legacy_unsupported_element(result: dict) -> bool:
@@ -105,7 +142,8 @@ def _legacy_element_result(request: ElementRequest, data: dict) -> dict:
 
 
 @router.post("/element", response_model=ElementResponse)
-def analyze_element_v1(request: ElementRequest):
+def analyze_element_v1(request: ElementRequest, http_request: Request):
+    project_id, user_id = _project_context(request.project_id, http_request)
     value = request.input
     if request.seismic is not None:
         raise _unsupported("Seismic analysis is not implemented in the v1 contract")
@@ -163,11 +201,14 @@ def analyze_element_v1(request: ElementRequest):
         legacy_unverified=LegacyElementOutput(result=legacy_result), warnings=warnings,
         analysis_run_id="pending",
     )
-    return response.model_copy(update={"analysis_run_id": create_element_run(response)})
+    record = create_element_record(response)
+    persistence_state, stored_project_id = _store_record(record, project_id, user_id)
+    return response.model_copy(update={"analysis_run_id": record.run_id, "persistence_state": persistence_state, "project_id": request.project_id if stored_project_id else None})
 
 
 @router.post("/structure", response_model=StructureResponse)
-def analyze_structure_v1(request: StructureRequest):
+def analyze_structure_v1(request: StructureRequest, http_request: Request):
+    project_id, user_id = _project_context(request.project_id, http_request)
     if not supports_legacy_structure(request.code_id):
         raise _unsupported(f"The {request.code_id.value} family has no structure-level legacy analysis path")
     if any(section.inertia_mm4 is not None for section in request.sections):
@@ -222,7 +263,9 @@ def analyze_structure_v1(request: StructureRequest):
         legacy_unverified=LegacyStructureOutput(results=legacy_results), warnings=warnings,
         analysis_run_id="pending",
     )
-    return response.model_copy(update={"analysis_run_id": create_structure_run(response)})
+    record = create_structure_record(response)
+    persistence_state, stored_project_id = _store_record(record, project_id, user_id)
+    return response.model_copy(update={"analysis_run_id": record.run_id, "persistence_state": persistence_state, "project_id": request.project_id if stored_project_id else None})
 
 
 def _canonical_combinations(raw_results: dict) -> dict[str, CanonicalCombinationResult]:

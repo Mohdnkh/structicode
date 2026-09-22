@@ -40,3 +40,11 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
+
+# Local P9 database files
+/.structicode/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db-wal
+*.db-shm

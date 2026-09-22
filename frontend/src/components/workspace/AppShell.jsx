@@ -1,14 +1,16 @@
 import { NavLink } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Activity, Languages, Layers3 } from 'lucide-react'
+import { Activity, FolderKanban, Languages, Layers3, LogIn, LogOut } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 export default function AppShell({ children }) {
   const { i18n } = useTranslation()
+  const { authenticated, signOut } = useAuth()
   const language = i18n.language?.startsWith('ar') ? 'ar' : 'en'
   const navigation = language === 'ar'
-    ? [{ to: '/', label: 'الرئيسية', icon: Layers3 }, { to: '/analyze', label: 'تحليل العناصر', icon: Activity }, { to: '/structure-designer', label: 'مساحة عمل المنشأ', icon: Layers3 }]
-    : [{ to: '/', label: 'Home', icon: Layers3 }, { to: '/analyze', label: 'Element Analysis', icon: Activity }, { to: '/structure-designer', label: 'Structure Workspace', icon: Layers3 }]
+    ? [{ to: '/', label: 'الرئيسية', icon: Layers3 }, { to: '/analyze', label: 'تحليل العناصر', icon: Activity }, { to: '/structure-designer', label: 'مساحة عمل المنشأ', icon: Layers3 }, { to: '/projects', label: 'المشاريع', icon: FolderKanban }]
+    : [{ to: '/', label: 'Home', icon: Layers3 }, { to: '/analyze', label: 'Element Analysis', icon: Activity }, { to: '/structure-designer', label: 'Structure Workspace', icon: Layers3 }, { to: '/projects', label: 'Projects', icon: FolderKanban }]
 
   useEffect(() => {
     document.documentElement.lang = language
@@ -35,6 +37,7 @@ export default function AppShell({ children }) {
         aria-label={`Switch to ${language === 'ar' ? 'English' : 'Arabic'}`}>
         <Languages aria-hidden="true" size={16} /> {language === 'ar' ? 'English' : 'العربية'}
       </button>
+      {authenticated ? <button className="language-control" type="button" onClick={signOut}><LogOut aria-hidden="true" size={16} /> {language === 'ar' ? 'تسجيل الخروج' : 'Sign out'}</button> : <NavLink className="language-control" to="/sign-in"><LogIn aria-hidden="true" size={16} /> {language === 'ar' ? 'تسجيل الدخول' : 'Sign in'}</NavLink>}
     </header>
     <main id="workspace-main" className="workspace-main">{children}</main>
   </div>

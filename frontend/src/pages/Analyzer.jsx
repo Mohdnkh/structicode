@@ -13,6 +13,9 @@ import CapabilityBadge from '../components/workspace/CapabilityBadge'
 import CapabilityPanel from '../components/workspace/CapabilityPanel'
 import ReportAction from '../components/workspace/ReportAction'
 import { ErrorPanel, LoadingState, StatusNotice } from '../components/workspace/StatusNotice'
+import { useAuth } from '../context/AuthContext'
+import { useProject } from '../context/ProjectContext'
+import { projectAnalysisContext } from '../context/projectState'
 
 const elements = ['beam', 'column', 'slab', 'staircase', 'footing', 'steel_beam', 'steel_column']
 
@@ -27,18 +30,20 @@ function ElementResult({ result, reportLoading, reportError, onDownload }) {
     {result.warnings?.length > 0 && <StatusNotice tone="warning" title={t('common.warnings')}>{result.warnings.map(item => <p key={item}>{item}</p>)}</StatusNotice>}
     <section className="legacy-boundary"><h3>{t('analyzer.legacy_title')}</h3><p>{t('analyzer.legacy_detail')}</p><details className="raw-details"><summary>{t('analyzer.inspect_legacy')}</summary><pre>{JSON.stringify(result.legacy_unverified, null, 2)}</pre></details></section>
     <details className="raw-details"><summary>{t('analyzer.inspect_input')}</summary><pre>{JSON.stringify(result.canonical_input, null, 2)}</pre></details>
-    <ReportAction runId={result.analysis_run_id} onDownload={onDownload} loading={reportLoading} />
+    <StatusNotice tone={result.persistence_state === 'PROJECT_PERSISTED' ? 'success' : 'warning'} title={t(result.persistence_state === 'PROJECT_PERSISTED' ? 'projects.persisted' : 'projects.ephemeral')}><p>{result.persistence_state === 'PROJECT_PERSISTED' ? t('projects.persisted_detail') : t('projects.ephemeral_detail')}</p></StatusNotice>
+    <ReportAction runId={result.analysis_run_id} onDownload={onDownload} loading={reportLoading} persistenceState={result.persistence_state} />
     {reportError && <ErrorPanel error={reportError} onRetry={onDownload} />}
   </section></div>
 }
 
 export default function Analyzer() {
   const { t } = useTranslation(); const [capabilities, setCapabilities] = useState(null); const [capabilityError, setCapabilityError] = useState(null); const [selectedFamilyId, setSelectedFamilyId] = useState(''); const [selectedElement, setSelectedElement] = useState(''); const [result, setResult] = useState(null); const [loading, setLoading] = useState(false); const [reportLoading, setReportLoading] = useState(false); const [reportError, setReportError] = useState(null)
+  const { authenticated } = useAuth(); const { activeProjectId } = useProject()
   const loadCapabilities = useCallback(async () => { setCapabilityError(null); setCapabilities(null); try { const data = await getCapabilities(); setCapabilities(data); setSelectedFamilyId(current => current || data.families[0]?.family_id || '') } catch (error) { setCapabilityError(error) } }, [])
   useEffect(() => { loadCapabilities() }, [loadCapabilities])
   const family = useMemo(() => capabilities?.families.find(item => item.family_id === selectedFamilyId) || null, [capabilities, selectedFamilyId]); const capability = elementCapability(family, selectedElement); const selectable = isElementSelectable(family, selectedElement)
   const handleFamily = event => { setSelectedFamilyId(event.target.value); setSelectedElement(''); setResult(null); setReportError(null) }; const handleElement = event => { setSelectedElement(event.target.value); setResult(null); setReportError(null) }
-  const handleSubmit = async formData => { if (!family || !selectedElement || !selectable) return; setLoading(true); setResult(null); setReportError(null); try { setResult(await analyzeElement({ code: family.family_id, element: selectedElement, formData })) } catch (error) { setResult({ request_status: 'error', error }) } finally { setLoading(false) } }
+  const handleSubmit = async formData => { if (!family || !selectedElement || !selectable) return; setLoading(true); setResult(null); setReportError(null); try { setResult(await analyzeElement({ code: family.family_id, element: selectedElement, formData, ...projectAnalysisContext(authenticated, activeProjectId) })) } catch (error) { setResult({ request_status: 'error', error }) } finally { setLoading(false) } }
   const handleReport = async () => { if (!result?.analysis_run_id) return; setReportError(null); setReportLoading(true); try { downloadBlob(await downloadTraceableReport(result.analysis_run_id), `structicode-${result.analysis_run_id}.pdf`) } catch (error) { setReportError(error) } finally { setReportLoading(false) } }
   return <section><header className="page-header"><div><p className="eyebrow">{t('analyzer.eyebrow')}</p><h1>{t('analyzer.title')}</h1><p>{t('analyzer.subtitle')}</p></div></header>
     {capabilityError && <ErrorPanel error={capabilityError} onRetry={loadCapabilities} />}{!capabilities && !capabilityError ? <LoadingState /> : capabilities && <div className="workspace-grid"><aside className="workspace-sidebar"><section className="panel control-stack"><h2>{t('analyzer.select_route')}</h2>

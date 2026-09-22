@@ -3,7 +3,7 @@ const loadCases = { D: 'dead', L: 'live', W: 'wind', S: 'snow', E: 'earthquake' 
 
 export const codeId = (value) => String(value).trim().toLowerCase()
 
-export function elementRequest({ code, element, formData, seismic }) {
+export function elementRequest({ code, element, formData, seismic, projectId }) {
   const common = { code_id: codeId(code) }
   let input
   switch (element) {
@@ -90,7 +90,7 @@ export function elementRequest({ code, element, formData, seismic }) {
     default:
       throw new Error(`Unsupported element identifier: ${element}`)
   }
-  return { ...common, input, ...(seismic?.zone ? { seismic } : {}) }
+  return { ...common, input, ...(seismic?.zone ? { seismic } : {}), ...(projectId ? { project_id: projectId } : {}) }
 }
 
 function steelDimensions(dimensions) {
@@ -132,6 +132,7 @@ export function structureRequest(model) {
       id: slab.id, x_m: slab.x, y_m: slab.y,
       width_m: slab.w, height_m: slab.h, thickness_m: slab.t,
       material_id: slab.materialId
-    }))
+    })),
+    ...(model.projectId ? { project_id: model.projectId } : {})
   }
 }
