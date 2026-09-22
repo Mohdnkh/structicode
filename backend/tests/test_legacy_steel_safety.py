@@ -159,7 +159,9 @@ def test_pdf_does_not_print_client_supplied_safe_claim(tmp_path, monkeypatch):
     streams = re.findall(rb"stream\r?\n(.*?)\r?\nendstream", raw, re.DOTALL)
     content = b"".join(zlib.decompress(stream) for stream in streams)
     assert b"Overall: NOT EVALUATED \\(legacy, unverified\\)" in content
-    assert b"SAFE" not in content and b"VERIFIED" not in content
+    assert b"LEGACY / UNVERIFIED / CLIENT-SUPPLIED REPORT" in content
+    assert not re.search(rb"(?<![A-Z_])SAFE(?![A-Z_])", content)
+    assert not re.search(rb"(?<![A-Z_])VERIFIED(?![A-Z_])", content)
 
 
 @pytest.mark.parametrize("path", [

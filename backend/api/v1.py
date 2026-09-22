@@ -34,6 +34,7 @@ from .engine.structure_analyzer import (
     SolverInputError, SolverNumericalError, StructureAnalyzer,
     StructureUnstableError, UnsupportedSlabError,
 )
+from .reporting.trace import create_element_run, create_structure_run
 
 
 logger = logging.getLogger(__name__)
@@ -157,10 +158,12 @@ def analyze_element_v1(request: ElementRequest):
         warnings.append("The legacy staircase calculation does not use the entered stair width.")
     if value.kind == "steel_beam":
         warnings.append("The legacy steel beam capacity formula remains unverified; the UI span is interpreted as mm.")
-    return ElementResponse(
+    response = ElementResponse(
         code_id=request.code_id, element_id=value.kind, canonical_input=canonical,
         legacy_unverified=LegacyElementOutput(result=legacy_result), warnings=warnings,
+        analysis_run_id="pending",
     )
+    return response.model_copy(update={"analysis_run_id": create_element_run(response)})
 
 
 @router.post("/structure", response_model=StructureResponse)
@@ -214,10 +217,12 @@ def analyze_structure_v1(request: StructureRequest):
     warnings.extend(dict.fromkeys(warning for raw in raw_results.values() for warning in raw["warnings"]))
     if get_family(request.code_id).load_combination_profile == CombinationProfile.GENERIC_DEAD_ONLY:
         warnings.append("The legacy generator uses its generic dead-load combination for this code family.")
-    return StructureResponse(
+    response = StructureResponse(
         code_id=request.code_id, canonical_input=canonical, combinations=combinations,
         legacy_unverified=LegacyStructureOutput(results=legacy_results), warnings=warnings,
+        analysis_run_id="pending",
     )
+    return response.model_copy(update={"analysis_run_id": create_structure_run(response)})
 
 
 def _canonical_combinations(raw_results: dict) -> dict[str, CanonicalCombinationResult]:

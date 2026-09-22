@@ -29,6 +29,12 @@ def generate_pdf(data: dict, result: dict, filename="analysis_report.pdf"):
     pdf.add_page()
     pdf.set_font("Arial", size=11)
     pdf.set_text_color(0, 0, 0)
+    pdf.set_fill_color(255, 235, 200)
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 8, "LEGACY / UNVERIFIED / CLIENT-SUPPLIED REPORT", ln=True, fill=True)
+    pdf.set_font("Arial", size=9)
+    pdf.multi_cell(0, 6, "This compatibility report is generated from client-supplied data and is not traceable to a server-owned analysis run. It must not be interpreted as an authoritative engineering result.")
+    pdf.ln(3)
 
     # ================================
     # 1. Project Info
