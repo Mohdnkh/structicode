@@ -34,19 +34,53 @@ npm audit
 git diff --check
 ```
 
-The backend regression suite passes 395 tests. The frontend suite passes 14 tests, the production build transforms 1,711 modules, the clean migration reaches the Alembic head, the backend import passes with the project virtual environment, and the repository hygiene check inspects 158 tracked files.
+The backend regression suite passes 407 tests. The frontend suite passes 14 tests, the production build transforms 1,711 modules, the clean migration reaches the Alembic head, the backend import passes with the project virtual environment, and the repository hygiene check inspects 170 tracked files.
 
 HTTP smoke results record transport and authorization safety separately from engineering verification: health/CORS, 413 body rejection, 429 rate limiting, strong and weak-secret behavior, anonymous and project-persisted runs, cross-tenant denial, persistent run/report authorization, database-failure fail-closed behavior, and sanitized legacy errors are covered. Legacy calculation responses remain explicitly `UNVERIFIED`.
 
 ## Dependency audits
 
-`npm audit --omit=dev` reports 2 moderate runtime advisories in the current React Router line. Full `npm audit` reports 4 advisories (3 moderate and 1 high), including the Vite/esbuild development advisory. Remediation requires a breaking major upgrade, so no unreviewed dependency upgrade was made in P10.
+### Python runtime findings (`pip-audit -r backend/requirements.txt`)
 
-`pip-audit` 2.9.0 reports 16 advisories across the runtime requirements and 17 across the development requirements. No critical severity was identified in the generated reports; each item remains a documented maintenance input rather than an unreviewed breaking upgrade.
+The tool reports advisory identifiers and fixed versions, but does not provide a normalized severity field. Compatibility below means compatibility with the current exact pins was not established, not that a finding is unreachable.
+
+| Package | Installed | Advisory | Reported fix | Compatible fix established |
+| --- | --- | --- | --- | --- |
+| anyio | 4.9.0 | GHSA-82r6-8w77-94w6 | 4.14.2 | No; review required |
+| anyio | 4.9.0 | GHSA-5p39-cfhj-2xmp | 4.14.2 | No; review required |
+| click | 8.2.1 | PYSEC-2026-2132 | 8.3.3 | No; review required |
+| starlette | 0.47.2 | PYSEC-2026-161 | 1.0.1 | No compatible fix established |
+| starlette | 0.47.2 | PYSEC-2026-249 | 1.3.1 | No compatible fix established |
+| starlette | 0.47.2 | PYSEC-2026-248 | 1.3.0 | No compatible fix established |
+| starlette | 0.47.2 | PYSEC-2026-1942 | 0.49.1 | No; review required |
+| starlette | 0.47.2 | PYSEC-2026-2281 | 1.1.0 | No compatible fix established |
+| starlette | 0.47.2 | PYSEC-2026-2280 | 1.1.0 | No compatible fix established |
+| idna | 3.10 | PYSEC-2026-215 | 3.15 | No; review required |
+| requests | 2.32.4 | PYSEC-2026-2275 | 2.33.0 | No; review required |
+| urllib3 | 2.5.0 | PYSEC-2026-141 | 2.7.0 | No; review required |
+| urllib3 | 2.5.0 | PYSEC-2026-1998 | 2.6.0 | No; review required |
+| urllib3 | 2.5.0 | PYSEC-2026-1994 | 2.6.0 | No; review required |
+| urllib3 | 2.5.0 | PYSEC-2026-1996 | 2.6.3 | No; review required |
+| ecdsa | 0.19.2 | PYSEC-2026-1325 | none reported | No fix reported |
+
+### Python development findings
+
+`pip-audit -r backend/requirements-dev.txt` reports the same runtime findings plus one additional development dependency finding in `pytest` 8.4.2 (`PYSEC-2026-1845`, reported fix 9.0.3). The audit also includes the pinned audit tooling dependency graph. Advisory severity is not inferred from this output.
+
+### NPM runtime findings (`npm audit --omit=dev`)
+
+| Package | Severity reported by npm | Advisory | Fix availability |
+| --- | --- | --- | --- |
+| react-router | moderate | GHSA-wrjc-x8rr-h8h6; GHSA-337j-9hxr-rhxg | `react-router-dom` 7.18.4, semver-major breaking upgrade |
+| react-router-dom | moderate (transitive react-router) | GHSA-wrjc-x8rr-h8h6; GHSA-337j-9hxr-rhxg | `react-router-dom` 7.18.4, semver-major breaking upgrade |
+
+### NPM development findings (`npm audit`)
+
+The full audit additionally reports `esbuild` moderate (GHSA-67mh-4wv8-2f99, fixed through Vite 8.3.0) and `vite` high (GHSA-4w7w-66w2-5vf9, GHSA-v6wh-96g9-6wx3, GHSA-fx2h-pf6j-xcff, fixed through Vite 8.3.0). Both fixes are breaking major upgrades. No dependency was upgraded without a separate compatibility review.
 
 ## Repository hygiene and residual risk
 
-The hygiene script rejects tracked dependency directories, build output, Python caches, local databases, generated reports, and secret environment files. Process-local rate limiting, SQLite persistence, missing production secret management, and the deferred engineering verification phases remain material release limitations.
+The hygiene script rejects tracked dependency directories, build output, Python caches, local databases, generated reports, and secret environment files, including nested `.env*` basenames. Process-local rate limiting, SQLite persistence, missing production secret management, and the deferred engineering verification phases remain material release limitations.
 
 ## CI
 

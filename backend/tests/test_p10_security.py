@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 
 from alembic import command
 from alembic.config import Config
@@ -10,8 +11,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastapi.middleware.cors import CORSMiddleware
 import pytest
+from sqlalchemy import select
 
-from backend.api.data.database import configure_database
+from backend.api.data.database import configure_database, session_scope
+from backend.api.data.models import EngineVersion
+from backend.api.data.services import engine_version_for_run
 from backend.api.main import app
 from backend.api.reporting.models import AnalysisRunRecord
 from backend.api.reporting.run_store import RUN_STORE
@@ -187,14 +191,99 @@ def test_persistent_lookup_database_failure_fails_closed(enterprise_client, monk
     assert response.json()["error"]["code"] == "PERSISTENCE_ERROR"
 
 
+def test_persistent_report_database_failure_fails_closed(enterprise_client, monkeypatch):
+    from backend.api.reporting import report_api
+    from backend.api.auth.security import EnterpriseError
+
+    def fail(_run_id):
+        raise EnterpriseError("PERSISTENCE_ERROR", "Local data storage is unavailable", 503)
+
+    monkeypatch.setattr(report_api, "_persistent_row", fail)
+    response = enterprise_client.get("/api/v1/reports/run-that-is-not-known.pdf")
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "PERSISTENCE_ERROR"
+
+
 def test_persistent_record_precedes_same_id_memory_record(enterprise_client):
-    registration = enterprise_client.post("/api/v1/auth/register", json={"email": "owner@example.com", "password": "P10-test-password!", "display_name": "Owner"}).json()
-    organizations = enterprise_client.get("/api/v1/organizations", headers={"Authorization": f"Bearer {registration['access_token']}"}).json()
-    project = enterprise_client.post("/api/v1/projects", headers={"Authorization": f"Bearer {registration['access_token']}"}, json={"organization_id": organizations[0]["id"], "name": "P10"}).json()
-    result = enterprise_client.post("/api/v1/analysis/element", headers={"Authorization": f"Bearer {registration['access_token']}"}, json={**ELEMENT, "project_id": project["id"]})
+    owner = enterprise_client.post("/api/v1/auth/register", json={"email": "owner@example.com", "password": "P10-test-password!", "display_name": "Owner"}).json()
+    foreign = enterprise_client.post("/api/v1/auth/register", json={"email": "foreign@example.com", "password": "P10-test-password!", "display_name": "Foreign"}).json()
+    owner_headers = {"Authorization": f"Bearer {owner['access_token']}"}
+    foreign_headers = {"Authorization": f"Bearer {foreign['access_token']}"}
+    organizations = enterprise_client.get("/api/v1/organizations", headers=owner_headers).json()
+    project = enterprise_client.post("/api/v1/projects", headers=owner_headers, json={"organization_id": organizations[0]["id"], "name": "P10"}).json()
+    result = enterprise_client.post("/api/v1/analysis/element", headers=owner_headers, json={**ELEMENT, "project_id": project["id"]})
     assert result.status_code == 200
     run_id = result.json()["analysis_run_id"]
-    record = AnalysisRunRecord.model_validate(enterprise_client.get(f"/api/v1/analysis-runs/{run_id}", headers={"Authorization": f"Bearer {registration['access_token']}"}).json())
-    RUN_STORE.put(record)
-    anonymous = enterprise_client.get(f"/api/v1/analysis-runs/{run_id}")
-    assert anonymous.status_code == 401
+    record = AnalysisRunRecord.model_validate(enterprise_client.get(f"/api/v1/analysis-runs/{run_id}", headers=owner_headers).json())
+    RUN_STORE.put(record.model_copy(update={"warnings": (*record.warnings, "MEMORY_CONFLICT_MARKER")}))
+    assert enterprise_client.get(f"/api/v1/analysis-runs/{run_id}").status_code == 401
+    assert enterprise_client.get(f"/api/v1/analysis-runs/{run_id}", headers=foreign_headers).status_code == 404
+    authorized = enterprise_client.get(f"/api/v1/analysis-runs/{run_id}", headers=owner_headers)
+    assert authorized.status_code == 200
+    assert "MEMORY_CONFLICT_MARKER" not in authorized.json()["warnings"]
+    assert authorized.json()["record_hash_sha256"] == record.record_hash_sha256
+    assert enterprise_client.get(f"/api/v1/reports/{run_id}.pdf").status_code == 401
+    assert enterprise_client.get(f"/api/v1/reports/{run_id}.pdf", headers=foreign_headers).status_code == 404
+    from backend.api.reporting import report_api
+    captured = {}
+    def render(persistent_record):
+        captured["record"] = persistent_record
+        return b"%PDF-1.4\nP10\n"
+    with patch.object(report_api, "render_report_bytes", side_effect=render):
+        report = enterprise_client.get(f"/api/v1/reports/{run_id}.pdf", headers=owner_headers)
+    assert report.status_code == 200 and report.content.startswith(b"%PDF")
+    assert "MEMORY_CONFLICT_MARKER" not in captured["record"].warnings
+
+
+def test_project_version_compare_and_swap_rejects_stale_update(enterprise_client):
+    owner = enterprise_client.post("/api/v1/auth/register", json={"email": "cas@example.com", "password": "P10-test-password!", "display_name": "CAS"}).json()
+    headers = {"Authorization": f"Bearer {owner['access_token']}"}
+    organization = enterprise_client.get("/api/v1/organizations", headers=headers).json()[0]
+    project = enterprise_client.post("/api/v1/projects", headers=headers, json={"organization_id": organization["id"], "name": "Initial"}).json()
+    first = enterprise_client.patch(f"/api/v1/projects/{project['id']}", headers=headers, json={"name": "Winner", "expected_version": project["version"]})
+    second = enterprise_client.patch(f"/api/v1/projects/{project['id']}", headers=headers, json={"name": "Loser", "expected_version": project["version"]})
+    assert first.status_code == 200 and first.json()["version"] == project["version"] + 1
+    assert second.status_code == 409 and second.json()["error"]["code"] == "PROJECT_VERSION_CONFLICT"
+    final = enterprise_client.get(f"/api/v1/projects/{project['id']}", headers=headers).json()
+    assert final["name"] == "Winner" and final["version"] == project["version"] + 1
+
+
+def test_engine_version_duplicate_recovery_is_deduplicated(enterprise_client):
+    owner = enterprise_client.post("/api/v1/auth/register", json={"email": "engine@example.com", "password": "P10-test-password!", "display_name": "Engine"}).json()
+    headers = {"Authorization": f"Bearer {owner['access_token']}"}
+    organization = enterprise_client.get("/api/v1/organizations", headers=headers).json()[0]
+    project = enterprise_client.post("/api/v1/projects", headers=headers, json={"organization_id": organization["id"], "name": "Engine"}).json()
+    payload = {**ELEMENT, "project_id": project["id"]}
+    first = enterprise_client.post("/api/v1/analysis/element", headers=headers, json=payload)
+    second = enterprise_client.post("/api/v1/analysis/element", headers=headers, json=payload)
+    assert first.status_code == second.status_code == 200
+    first_record = AnalysisRunRecord.model_validate(enterprise_client.get(f"/api/v1/analysis-runs/{first.json()['analysis_run_id']}", headers=headers).json())
+    with session_scope() as session:
+        existing = session.scalar(select(EngineVersion))
+        assert existing is not None
+        with patch.object(session, "scalar", side_effect=[None, existing]):
+            recovered = engine_version_for_run(session, first_record)
+        assert recovered.id == existing.id
+        matches = session.query(EngineVersion).filter_by(engine_id=existing.engine_id, engine_version=existing.engine_version, repository_commit_sha=existing.repository_commit_sha, analysis_run_schema_version=existing.analysis_run_schema_version, report_schema_version=existing.report_schema_version).all()
+        assert len(matches) == 1
+
+
+def test_documented_auth_setup_secret_meets_minimum():
+    import re
+    text = Path("docs/engineering/LOCAL_DATABASE_AND_AUTH.md").read_text(encoding="utf-8")
+    value = re.search(r'STRUCTICODE_AUTH_SECRET = "([^"]+)"', text).group(1)
+    assert len(value.encode("utf-8")) >= 32
+
+
+@pytest.mark.parametrize(
+    ("path", "allowed"),
+    [
+        (".env.example", True), (".env", False), (".env.production", False),
+        ("frontend/.env.production", False), ("backend/.env.local", False),
+        ("local.db", False), ("reports/report.pdf", False),
+        ("backend/__pycache__/module.pyc", False),
+    ],
+)
+def test_repository_hygiene_rules_cover_nested_environment_and_generated_files(path, allowed):
+    from scripts.check_repository_hygiene import forbidden
+    assert forbidden(path) is (not allowed)

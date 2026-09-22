@@ -8,13 +8,14 @@ from pathlib import PurePosixPath
 
 def forbidden(path: str) -> bool:
     parts = PurePosixPath(path).parts
+    basename = PurePosixPath(path).name
     if any(part in {"node_modules", "dist", "__pycache__", ".pytest_cache"} for part in parts):
         return True
     if path.endswith((".pyc", ".pyo", ".pyd")):
         return True
     if PurePosixPath(path).name == "report.pdf" or path.endswith((".db", ".sqlite", ".sqlite3", ".pkl")):
         return True
-    if path.startswith(".env") and path not in {".env.example"}:
+    if basename.startswith(".env") and path != ".env.example":
         return True
     return False
 
