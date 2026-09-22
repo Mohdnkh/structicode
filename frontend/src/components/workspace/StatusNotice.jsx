@@ -1,4 +1,5 @@
 import { AlertTriangle, CircleAlert, Info, LoaderCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export function StatusNotice({ tone = 'info', title, children, live = false }) {
   const Icon = tone === 'error' ? CircleAlert : tone === 'warning' ? AlertTriangle : Info
@@ -7,14 +8,16 @@ export function StatusNotice({ tone = 'info', title, children, live = false }) {
   </section>
 }
 
-export function LoadingState({ label = 'Loading workspace capability data…' }) {
-  return <div className="loading-state" role="status" aria-live="polite"><LoaderCircle className="spin" aria-hidden="true" size={18} /> {label}</div>
+export function LoadingState({ label }) {
+  const { t } = useTranslation()
+  return <div className="loading-state" role="status" aria-live="polite"><LoaderCircle className="spin" aria-hidden="true" size={18} /> {label || t('common.loading')}</div>
 }
 
 export function ErrorPanel({ error, onRetry }) {
-  return <StatusNotice tone="error" title={error?.code || 'Workspace unavailable'} live>
-    <p>{error?.message || 'The local API did not return usable capability metadata.'}</p>
+  const { t } = useTranslation()
+  return <StatusNotice tone="error" title={error?.code || t('common.unavailable')} live>
+    <p>{error?.message || t('common.unavailable')}</p>
     {error?.details?.length > 0 && <ul>{error.details.map((item, index) => <li key={`${item.field}-${index}`}>{item.field}: {item.message}</li>)}</ul>}
-    {onRetry && <button className="button button-secondary" type="button" onClick={onRetry}>Retry</button>}
+    {onRetry && <button className="button button-secondary" type="button" onClick={onRetry}>{t('common.retry')}</button>}
   </StatusNotice>
 }

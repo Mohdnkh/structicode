@@ -33,3 +33,10 @@ The shell persists only the language preference. It applies `lang` and `dir` at 
 ## P9 handoff
 
 P8 keeps model state in the current page session. It adds no identity, ownership, database, project, or durable engineering-record persistence. P9 owns those capabilities.
+## P8 independent-review rework
+
+The Structure Workspace now renders a dedicated capability summary from the P6 family record. It consumes `family.structure_analysis`, `family.structure_design`, `family.load_combination`, and `family.seismic` directly; it does not infer those states from a code-family name or a frontend matrix.
+
+Analyzer and Structure Workspace use the existing `react-i18next` catalog for their primary engineering copy. All seven element forms and the P7 traceable-report action are localized in English and Arabic. Technical IDs, machine-status tokens, numeric values, and unit notation remain isolated for left-to-right reading when Arabic RTL is active.
+
+A report download failure is independent from analysis success in both workflows. The successful run and its results stay visible while a nearby retryable error panel reports the failed download.

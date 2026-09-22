@@ -38,3 +38,11 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; fo
 @keyframes spin { to { transform:rotate(360deg); } } @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.01ms!important; } }
 @media (max-width: 900px) { .app-header { flex-wrap:wrap; }.workspace-nav { order:3; flex-basis:100%; overflow-x:auto; }.workspace-grid,.home-entry { grid-template-columns:1fr; }.metadata-grid,.summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width: 560px) { .workspace-main { padding:16px; }.page-header { display:block; }.app-header { padding:10px 16px; }.brand { min-width:0; flex:1; }.brand small { display:none; }.nav-link span { font-size:12px; }.language-control { padding:8px; }.form-grid,.metadata-grid,.summary-grid { grid-template-columns:1fr; }.panel,.capability-panel,.result-section { padding:16px; }.canvas-toolbar { align-items:start; flex-direction:column; }.structure-canvas { min-height:280px; } }
+/* P8 rework: keep technical values readable inside the Arabic workspace. */
+:root[dir="rtl"] code, :root[dir="rtl"] .mono, :root[dir="rtl"] input[type="number"], :root[dir="rtl"] .engineering-table td:not(:first-child) { direction: ltr; unicode-bidi: isolate; }
+:root[dir="rtl"] input[type="number"] { text-align: start; }
+.structure-capabilities { display:grid; gap:var(--space-3); margin:0; }
+.structure-capabilities > div { padding:var(--space-3); border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--panel-elevated); }
+.structure-capabilities dt { color:var(--muted); font-size:13px; font-weight:750; }
+.structure-capabilities dd { margin:6px 0 0; }
+.structure-capabilities p { margin:7px 0 0; color:var(--muted); font-size:12px; line-height:1.45; }

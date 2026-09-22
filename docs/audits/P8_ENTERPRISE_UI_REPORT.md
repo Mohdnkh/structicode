@@ -35,3 +35,15 @@ Focused frontend tests passed 7 tests: three existing transport-adapter tests an
 The complete backend suite passed 379 tests. Focused P3, P4, P5, P6, and P7 suites passed 41, 25, 43, 144, and 13 tests. `npm run verify:backend` passed with the documented `.venv` active. `git diff --check` passed before the P8 commit review.
 
 The local browser smoke review confirmed a valid generic-steel legacy analysis, a minimal stable structure analysis, canonical structure result tables, and successful calls to the P7 run-ID report endpoint. At 1440, 1024, 768, and 390 px viewports, document scroll width matched client width. Browser console review found no errors. Arabic review confirmed `lang="ar"`, `dir="rtl"`, translated navigation, usable RTL layout, and un-reversed technical units.
+
+## Independent review rework
+
+The P8 review identified three UI exit-gate gaps. The rework adds a dedicated `StructureCapabilitySummary` that reads the four P6 family fields directly: `structure_analysis`, `structure_design`, `load_combination`, and `seismic`. It renders a separate label, machine-status badge, and registry note for each field. Generic `steel` remains unavailable because its own registry mechanics capability does not expose a v1 structure route.
+
+Analyzer, Structure Workspace, all seven element forms, report actions, loading/error notices, and primary engineering headings now obtain visible copy through `react-i18next`. English and Arabic catalogs preserve explicit review-required and legacy/unverified boundaries. Machine tokens remain unchanged. RTL styles isolate run IDs, code IDs, numeric input values, units, and table numeric data in left-to-right presentation.
+
+Analyzer now keeps traceable-report failures in dedicated `reportError` state. A failed report download leaves the successful analysis result intact, displays an accessible error panel beside the report action, and permits retry. Structure Workspace uses the same separation for report errors, preserving its completed result and canonical mechanics tables.
+
+The focused frontend suite now has 10 passing tests: three existing adapter tests and seven P8 tests. The added coverage proves all four P6 structure capability fields are used, Analyzer report failures remain visible without replacing results, and representative engineering-workspace keys exist in both translation catalogs.
+
+Browser recheck covered the Analyzer family/element route workflow, a successful generic-steel compatibility run, the server-owned report action, the four P6 structure statuses, and a forced local report-download failure. The forced failure retained the completed element result and showed `REPORT_ERROR`, a plain failure message, and a retry action. English and Arabic desktop views and Arabic mobile RTL were checked; document scroll width did not exceed client width.
