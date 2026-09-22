@@ -472,6 +472,7 @@ class ElementResponse(StrictModel):
     canonical_input: CanonicalElement
     legacy_unverified: LegacyElementOutput
     warnings: list[str] = Field(default_factory=list)
+    analysis_run_id: Identifier
 
 
 class CanonicalDisplacement(StrictModel):
@@ -524,6 +525,7 @@ class StructureResponse(StrictModel):
     combinations: dict[str, CanonicalCombinationResult]
     legacy_unverified: LegacyStructureOutput
     warnings: list[str] = Field(default_factory=list)
+    analysis_run_id: Identifier
 
 
 class ValidationDetail(StrictModel):

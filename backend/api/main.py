@@ -23,6 +23,7 @@ from backend.api.engine.concrete.column import analyze_concrete_column
 from backend.api.engine.concrete.footing import analyze_concrete_footing
 from backend.api.engine.concrete.staircase import analyze_concrete_staircase
 from backend.api import capabilities_api, v1
+from backend.api.reporting import report_api
 from backend.api.domain.schemas import ErrorBody, ErrorEnvelope, ValidationDetail, VerificationStatus
 
 app = FastAPI()
@@ -32,6 +33,7 @@ FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 app.include_router(structure_router.router, prefix="/api")
 app.include_router(v1.router)
 app.include_router(capabilities_api.router)
+app.include_router(report_api.router)
 
 
 @app.exception_handler(v1.ContractError)
@@ -153,10 +155,13 @@ async def generate_pdf_report(request: PDFRequest):
         path = generate_pdf(request.data, request.result, filename)
         if not os.path.exists(path):
             raise HTTPException(status_code=500, detail="PDF not generated")
-        return FileResponse(path, media_type="application/pdf", filename=filename)
+        return FileResponse(
+            path, media_type="application/pdf", filename=filename,
+            headers={"X-Structicode-Report-Status": "LEGACY_CLIENT_SUPPLIED_UNVERIFIED"},
+        )
     except Exception as e:
         print("PDF generation failed:", e)
-        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {e}")
+        raise HTTPException(status_code=500, detail="Legacy report generation failed")
 
 @app.get("/health")
 def health():

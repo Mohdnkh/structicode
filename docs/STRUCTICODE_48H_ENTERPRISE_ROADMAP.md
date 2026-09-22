@@ -62,7 +62,7 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 | P4 | Verified Concrete Core | 14-20 h | DEFERRED — SOURCE BLOCKED | - | Verified ACI CODE-318-25 core not implemented; authorized source access required. P4 safety remediation merged. No concrete capability promoted to VERIFIED. |
 | P5 | Verified Steel Core | 20-25 h | DEFERRED — SOURCE BLOCKED | - | Exact ANSI/AISC 360-22 provisions, applicable errata, authoritative section properties, and independent reference examples remain unavailable. Legacy steel safety claims are contained; no steel rule is VERIFIED. Verified P5 exit gate remains unmet. |
 | P6 | Design-Code Registry & International Architecture | 25-29 h | READY FOR REVIEW | - | Typed registry and read-only capability API implemented; all backend, P3/P4/P5, frontend, build, and import checks passed. P4/P5 remain deferred and no design module became VERIFIED. |
-| P7 | Engineering Reports & Traceability | 29-33 h | HOLD | - | - |
+| P7 | Engineering Reports & Traceability | 29-33 h | READY FOR REVIEW | - | Server-owned v1 run records, trace hashes, bounded ephemeral store, run lookup, and in-memory PDF reports implemented. P4/P5 remain deferred; no legacy output is promoted to VERIFIED. |
 | P8 | Enterprise UI/UX & Engineering Workspace | 33-39 h | HOLD | - | - |
 | P9 | Projects, Identity & Enterprise Data Foundation | 39-42 h | HOLD | - | - |
 | P10 | QA, Security & Reliability Gate | 42-45 h | HOLD | - | - |
