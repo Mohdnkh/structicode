@@ -26,7 +26,24 @@ No reporting, database, identity, calculation, solver, load factor, seismic, or 
 
 ## Validation
 
-The P7 suite contains 11 tests covering server ownership, no result-registration endpoint, deterministic hashing, immutable deep-copy retrieval, deterministic eviction, unknown-run structured errors, P6 capability snapshotting, P3/design separation, P4/P5 safety semantics, report headers, forged client result isolation, concurrency isolation, legacy endpoint labelling, and Unicode/long-text rendering. The full backend suite passed 377 tests; explicit P3, P4, P5, and P6 regressions passed 41, 25, 43, and 144 tests. Frontend adapter tests passed 3 tests, the Vite build completed with 469 modules transformed, backend import verification passed, and `git diff --check` passed. Visual inspection rendered a two-page local sample report and confirmed its header, section hierarchy, page footer, wrapping, status labels, and canonical units were readable.
+The initial P7 suite contained 11 tests covering server ownership, no result-registration endpoint, deterministic hashing, immutable deep-copy retrieval, deterministic eviction, unknown-run structured errors, P6 capability snapshotting, P3/design separation, P4/P5 safety semantics, report headers, forged client result isolation, concurrency isolation, legacy endpoint labelling, and Unicode/long-text rendering. The initial full backend suite passed 377 tests; explicit P3, P4, P5, and P6 regressions passed 41, 25, 43, and 144 tests. Frontend adapter tests passed 3 tests, the Vite build completed with 469 modules transformed, backend import verification passed, and `git diff --check` passed. Visual inspection rendered a two-page local sample report and confirmed its header, section hierarchy, page footer, wrapping, status labels, and canonical units were readable.
+
+## Independent Review Rework — Rendered PDF Safety and Isolation Evidence
+
+The initial P7 safety checks searched raw PDF bytes. That is insufficient because FPDF 1.7 may compress page streams. The P7 suite now has a deterministic test helper that locates page content streams, decompresses Flate streams, decodes FPDF PDF literal strings (including both direct `Tj` text and wrapped `TJ` arrays), and normalizes whitespace only after extraction. Assertions therefore inspect text actually emitted by the renderer rather than uncompressed source bytes or HTTP headers.
+
+The strengthened suite proves the following from extracted report text:
+
+- A steel run retaining `legacy_status = safe` visibly remains `UNVERIFIED` and `NOT_EVALUATED`, without standalone authoritative `SAFE`, `UNSAFE`, `PASS`, or `VERIFIED` tokens.
+- A P4-compatible ACI structure record with `As_provided = null`, `Flexure_Check = NOT_EVALUATED`, and `Overall_Check = NOT_EVALUATED` states the concrete unverified and review boundary without inventing reinforcement or an adequacy conclusion.
+- A client-side forged copy containing `verification_status = VERIFIED` and `status = safe` cannot affect the trusted report obtained by its server-owned run ID.
+- Concurrent reports each contain their own run ID and canonical beam width, and contain neither the other run ID nor the other beam width.
+- Trusted reports visibly contain the run ID, all three SHA-256 hashes, run and report schema versions, engineering verification status, and canonical unit labels.
+- The legacy client-supplied PDF visibly contains `LEGACY / UNVERIFIED / CLIENT-SUPPLIED REPORT`.
+
+The extracted-text test exposed a real pagination defect: a long FPDF multi-cell disclaimer could start at a page boundary and omit its leading text. The renderer now begins the legacy/unverified safety boundary on a fresh page. It also replaces the standalone `PASS/FAIL` wording in the steel disclaimer with `binary acceptance conclusion`, so a report does not emit a misleading standalone acceptance token. This is report safety presentation only; no calculation logic changed.
+
+After this rework, `backend/tests/test_reporting.py` passed 13 tests and the complete backend suite passed 379 tests. P3, P4, P5, and P6 focused regressions passed 41, 25, 43, and 144 tests. Frontend adapter tests passed 3 tests, the Vite build completed with 469 modules transformed, backend import verification passed when the documented `.venv` is active, and `git diff --check` passed.
 
 ## Limitations
 

@@ -3,6 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import re
+import zlib
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -44,6 +45,79 @@ STRUCTURE = {
                  "loads": [{"case_id": "dead", "line_load_kn_per_m": 5}]}],
     "slabs": [],
 }
+
+
+def _decode_pdf_literal(value: bytes) -> str:
+    """Decode the PDF literal strings emitted by this repository's FPDF 1.7 renderer."""
+    decoded = bytearray()
+    index = 0
+    while index < len(value):
+        if value[index] != ord("\\"):
+            decoded.append(value[index])
+            index += 1
+            continue
+        index += 1
+        if index >= len(value):
+            break
+        escaped = value[index]
+        index += 1
+        escapes = {
+            ord("n"): b"\n", ord("r"): b"\r", ord("t"): b"\t",
+            ord("b"): b"\b", ord("f"): b"\f",
+        }
+        if escaped in escapes:
+            decoded.extend(escapes[escaped])
+        elif escaped in b"()\\":
+            decoded.append(escaped)
+        elif 48 <= escaped <= 55:
+            octal = bytes([escaped])
+            for _ in range(2):
+                if index < len(value) and 48 <= value[index] <= 55:
+                    octal += bytes([value[index]])
+                    index += 1
+                else:
+                    break
+            decoded.append(int(octal, 8))
+        else:
+            decoded.append(escaped)
+    raw = bytes(decoded)
+    return raw.decode("utf-16-be") if raw.startswith(b"\x00") else raw.decode("latin-1")
+
+
+def extract_fpdf_page_text(pdf_bytes: bytes) -> str:
+    """Extract decompressed page text from the known FPDF 1.7 PDF syntax.
+
+    The helper deliberately reads page content streams and decodes PDF literals before
+    assertions. It must not be replaced with raw PDF-byte searches, because FPDF may
+    compress page streams and therefore conceal visible text in the original bytes.
+    """
+    streams = re.findall(
+        rb"<<(.*?)>>\s*stream\r?\n(.*?)\r?\nendstream", pdf_bytes, flags=re.DOTALL,
+    )
+    page_content: list[bytes] = []
+    for dictionary, stream in streams:
+        content = zlib.decompress(stream) if b"/FlateDecode" in dictionary else stream
+        if b" Tj" in content or b" TJ" in content:
+            page_content.append(content)
+    if not page_content:
+        raise AssertionError("No PDF page text content streams were found")
+    # FPDF emits both direct `Tj` strings and word-spaced `TJ` arrays. Reading every
+    # literal string from decompressed page streams covers both operators.
+    literal_pattern = re.compile(rb"(?<!\\)\(((?:\\.|[^\\)])*)\)")
+    text = " ".join(
+        _decode_pdf_literal(match.group(1))
+        for content in page_content
+        for match in literal_pattern.finditer(content)
+    )
+    if not text:
+        raise AssertionError("No emitted PDF text literals were extracted")
+    return " ".join(text.split())
+
+
+def assert_no_authoritative_conclusions(pdf_text: str) -> None:
+    """Reject whole authoritative conclusion tokens while allowing UNVERIFIED."""
+    forbidden = re.compile(r"(?<![A-Z_])(?:SAFE|UNSAFE|PASS|VERIFIED)(?![A-Z_])")
+    assert not forbidden.search(pdf_text), pdf_text
 
 
 def synthetic_run(input_value=1, result_value=2):
@@ -123,6 +197,45 @@ def test_element_response_creates_server_owned_immutable_snapshot_and_report():
     assert pdf.headers["x-analysis-run-id"] == run_id
     assert pdf.headers["x-report-schema-version"] == "structicode_report_v1"
     assert pdf.content.startswith(b"%PDF")
+    pdf_text = extract_fpdf_page_text(pdf.content)
+    assert run_id in pdf_text
+    assert "Engineering verification status: UNVERIFIED" in pdf_text
+
+
+def test_forged_client_values_cannot_become_trusted_pdf_status():
+    response = analyze_element()
+    run_id = response["analysis_run_id"]
+    forged_client_copy = deepcopy(response)
+    forged_client_copy["verification_status"] = "VERIFIED"
+    forged_client_copy["legacy_unverified"] = {
+        "result": {"verification_status": "VERIFIED", "status": "safe"},
+    }
+    assert forged_client_copy["verification_status"] == "VERIFIED"
+    pdf = CLIENT.get(f"/api/v1/reports/{run_id}.pdf")
+    assert pdf.status_code == 200
+    pdf_text = extract_fpdf_page_text(pdf.content)
+    assert "Engineering verification status: UNVERIFIED" in pdf_text
+    assert "verification_status: VERIFIED" not in pdf_text
+    assert "status: safe" not in pdf_text.lower()
+    assert_no_authoritative_conclusions(pdf_text)
+
+
+def test_trusted_pdf_emits_traceability_metadata_and_canonical_units():
+    response = analyze_element()
+    stored = CLIENT.get(f"/api/v1/analysis-runs/{response['analysis_run_id']}")
+    assert stored.status_code == 200
+    run = stored.json()
+    pdf = CLIENT.get(f"/api/v1/reports/{run['run_id']}.pdf")
+    assert pdf.status_code == 200
+    pdf_text = extract_fpdf_page_text(pdf.content)
+    for expected in (
+        run["run_id"], run["input_hash_sha256"], run["result_hash_sha256"],
+        run["record_hash_sha256"], run["schema_version"],
+        run["engine_metadata"]["report_schema_version"],
+        "Engineering verification status: UNVERIFIED", "length: mm", "force: N",
+        "stress: MPa", "moment: N·mm", "rotation: rad",
+    ):
+        assert expected in pdf_text
 
 
 def test_trusted_report_has_no_client_result_registration_endpoint():
@@ -153,8 +266,11 @@ def test_steel_run_keeps_p5_unverified_and_source_blocked_metadata():
     legacy = stored["legacy_unverified_snapshot"]["result"]
     assert legacy.get("result", legacy)["legacy_status"] == "safe"
     pdf = CLIENT.get(f"/api/v1/reports/{response['analysis_run_id']}.pdf")
-    assert not re.search(rb"(?<![A-Z_])SAFE(?![A-Z_])", pdf.content)
-    assert not re.search(rb"(?<![A-Z_])VERIFIED(?![A-Z_])", pdf.content)
+    assert pdf.status_code == 200
+    pdf_text = extract_fpdf_page_text(pdf.content)
+    assert "Engineering verification status: UNVERIFIED" in pdf_text
+    assert "Steel legacy output remains UNVERIFIED with check state NOT_EVALUATED" in pdf_text
+    assert_no_authoritative_conclusions(pdf_text)
 
 
 def test_structure_run_separates_p3_mechanics_from_legacy_design():
@@ -180,7 +296,12 @@ def test_structure_snapshot_preserves_p4_not_evaluated_design_boundary():
     assert design["Flexure_Check"] == "NOT_EVALUATED"
     assert design["Overall_Check"] == "NOT_EVALUATED"
     report = CLIENT.get(f"/api/v1/reports/{response.json()['analysis_run_id']}.pdf")
-    assert report.status_code == 200 and b"SAFE" not in report.content
+    assert report.status_code == 200
+    pdf_text = extract_fpdf_page_text(report.content)
+    assert "Concrete legacy output remains unverified." in pdf_text
+    assert "Where provided reinforcement is absent, flexure and overall adequacy remain NOT_EVALUATED." in pdf_text
+    assert "As_provided:" not in pdf_text
+    assert_no_authoritative_conclusions(pdf_text)
 
 
 def test_concurrent_reports_are_isolated_by_run_snapshot():
@@ -195,6 +316,11 @@ def test_concurrent_reports_are_isolated_by_run_snapshot():
     assert first_record.canonical_input_snapshot["width_mm"] == 300
     assert second_record.canonical_input_snapshot["width_mm"] == 400
     assert first_record.record_hash_sha256 != second_record.record_hash_sha256
+    first_text, second_text = [extract_fpdf_page_text(report.content) for report in reports]
+    assert ids[0] in first_text and "width_mm: 300" in first_text
+    assert ids[1] not in first_text and "width_mm: 400" not in first_text
+    assert ids[1] in second_text and "width_mm: 400" in second_text
+    assert ids[0] not in second_text and "width_mm: 300" not in second_text
 
 
 def test_legacy_pdf_remains_explicitly_client_supplied_unverified(tmp_path, monkeypatch):
@@ -206,6 +332,7 @@ def test_legacy_pdf_remains_explicitly_client_supplied_unverified(tmp_path, monk
     assert response.status_code == 200
     assert response.headers["x-structicode-report-status"] == "LEGACY_CLIENT_SUPPLIED_UNVERIFIED"
     assert response.headers["content-type"] == "application/pdf"
+    assert "LEGACY / UNVERIFIED / CLIENT-SUPPLIED REPORT" in extract_fpdf_page_text(response.content)
 
 
 def test_renderer_handles_unicode_and_long_untrusted_identifiers():

@@ -172,12 +172,16 @@ def render_report_bytes(run: AnalysisRunRecord) -> bytes:
         for line in _lines(run.canonical_result_snapshot):
             _paragraph(pdf, line)
 
+    # Keep the safety boundary together on a fresh page. FPDF 1.7 can otherwise
+    # split long multi-cell disclaimers at a page boundary and omit leading text.
+    pdf.add_page()
     _section(pdf, "Legacy / Unverified Design Output")
     _paragraph(pdf, "These legacy design calculations have not been independently verified and must not be interpreted as an authoritative design-code compliance result.")
     _paragraph(pdf, "Any retained legacy comparison is NOT EVALUATED for engineering adequacy in this report.")
     if run.analysis_kind == "element" and run.element_id in {"steel_beam", "steel_column"}:
-        _paragraph(pdf, "Steel legacy output remains UNVERIFIED with check state NOT_EVALUATED; no PASS/FAIL conclusion is reported.")
-    if run.analysis_kind == "element" and run.element_id in {"beam", "column", "slab", "footing", "staircase"}:
+        _paragraph(pdf, "Steel legacy output remains UNVERIFIED with check state NOT_EVALUATED; no binary acceptance conclusion is reported.")
+    if ((run.analysis_kind == "element" and run.element_id in {"beam", "column", "slab", "footing", "staircase"})
+            or (run.analysis_kind == "structure" and run.code_family_id == "aci")):
         _paragraph(pdf, "Concrete legacy output remains unverified. Where provided reinforcement is absent, flexure and overall adequacy remain NOT_EVALUATED.")
 
     _section(pdf, "Limitations and Required Review")
