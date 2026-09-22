@@ -34,7 +34,7 @@ npm audit
 git diff --check
 ```
 
-The backend regression suite passes 407 tests. The frontend suite passes 14 tests, the production build transforms 1,711 modules, the clean migration reaches the Alembic head, the backend import passes with the project virtual environment, and the repository hygiene check inspects 170 tracked files.
+The backend regression suite passes 412 tests. The focused P10 security and CI-range suites pass 26 tests. The frontend suite passes 14 tests, the production build transforms 1,711 modules, the clean migration reaches the Alembic head, the backend import passes with the project virtual environment, and the repository hygiene check inspects 171 tracked files.
 
 HTTP smoke results record transport and authorization safety separately from engineering verification: health/CORS, 413 body rejection, 429 rate limiting, strong and weak-secret behavior, anonymous and project-persisted runs, cross-tenant denial, persistent run/report authorization, database-failure fail-closed behavior, and sanitized legacy errors are covered. Legacy calculation responses remain explicitly `UNVERIFIED`.
 
