@@ -66,8 +66,8 @@ Codex must keep this tracker current in the repository copy of the roadmap. Only
 | P8 | Enterprise UI/UX & Engineering Workspace | 33-39 h | PUSHED | - | - |
 | P9 | Projects, Identity & Enterprise Data Foundation | 39-42 h | PUSHED | - | Local-first SQLAlchemy/Alembic identity, project ownership, persistent P7 records, and minimal project UI are implemented. No calculation capability changed. |
 | P10 | QA, Security & Reliability Gate | 42-45 h | PUSHED | - | - |
-| P11 | Product Acceptance & Documentation | 45-47 h | READY FOR REVIEW | - | Product acceptance evidence and release documentation are reconciled against the merged P10 implementation. P4/P5 remain deferred and source blocked. |
-| P12 | Deployment Decision & Release Packaging | 47-48 h | HOLD | - | - |
+| P11 | Product Acceptance & Documentation | 45-47 h | PUSHED | - | Product acceptance evidence and release documentation were reconciled against the merged P10 implementation. P4/P5 remain deferred and source blocked. |
+| P12 | Deployment Decision & Release Packaging | 47-48 h | READY FOR REVIEW | - | Provider-neutral production package, PostgreSQL gate, preflight, runbooks, and a documented NO-GO decision are prepared. No deployment occurred. |
 
 ## 48-Hour Scope Boundary
 
