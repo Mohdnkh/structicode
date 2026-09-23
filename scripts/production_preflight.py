@@ -18,11 +18,10 @@ def validate_environment(environ: dict[str, str] | None = None) -> list[str]:
         errors.append("STRUCTICODE_RUNTIME_MODE must be production")
 
     database_url = values.get("STRUCTICODE_DATABASE_URL", "")
-    parsed = urlparse(database_url)
     if not database_url:
         errors.append("STRUCTICODE_DATABASE_URL is required")
-    elif parsed.scheme not in {"postgresql", "postgresql+psycopg2"}:
-        errors.append("production requires a PostgreSQL STRUCTICODE_DATABASE_URL")
+    else:
+        errors.extend(_database_url_errors(database_url))
 
     secret = values.get("STRUCTICODE_AUTH_SECRET", "")
     if len(secret.encode("utf-8")) < 32:
@@ -32,10 +31,8 @@ def validate_environment(environ: dict[str, str] | None = None) -> list[str]:
     if not origins:
         errors.append("STRUCTICODE_CORS_ORIGINS must contain an HTTPS origin")
     for origin in origins:
-        if origin == "*":
-            errors.append("STRUCTICODE_CORS_ORIGINS must not contain wildcard origin")
-        elif urlparse(origin).scheme != "https":
-            errors.append("production CORS origins must use HTTPS")
+        if not _is_browser_origin(origin):
+            errors.append("STRUCTICODE_CORS_ORIGINS contains an invalid browser origin")
 
     for name, minimum, maximum in (
         ("STRUCTICODE_MAX_REQUEST_BYTES", 1024, 16 * 1024 * 1024),
@@ -46,6 +43,45 @@ def validate_environment(environ: dict[str, str] | None = None) -> list[str]:
     ):
         errors.extend(_integer_from(values, name, minimum=minimum, maximum=maximum))
     return errors
+
+
+def _database_url_errors(value: str) -> list[str]:
+    try:
+        parsed = urlparse(value)
+        hostname = parsed.hostname
+        path = parsed.path.strip("/")
+        # Accessing ``port`` validates malformed port syntax without exposing
+        # the connection string in an error message.
+        parsed.port
+    except ValueError:
+        return ["STRUCTICODE_DATABASE_URL has invalid PostgreSQL URL syntax"]
+    if parsed.scheme not in {"postgresql", "postgresql+psycopg2"}:
+        return ["production requires a PostgreSQL STRUCTICODE_DATABASE_URL"]
+    if not hostname:
+        return ["STRUCTICODE_DATABASE_URL must include a PostgreSQL hostname"]
+    if not path:
+        return ["STRUCTICODE_DATABASE_URL must include a PostgreSQL database name"]
+    return []
+
+
+def _is_browser_origin(value: str) -> bool:
+    if value == "*":
+        return False
+    try:
+        parsed = urlparse(value)
+        parsed.port  # Validate malformed ports.
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and bool(parsed.hostname)
+        and parsed.username is None
+        and parsed.password is None
+        and parsed.path in {"", None}
+        and not parsed.params
+        and not parsed.query
+        and not parsed.fragment
+    )
 
 
 def _integer_from(values: dict[str, str], name: str, *, minimum: int, maximum: int) -> list[str]:

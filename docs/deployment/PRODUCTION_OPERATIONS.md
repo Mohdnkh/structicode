@@ -3,6 +3,7 @@
 - Topology: one same-origin container replica and one Uvicorn worker.
 - Database: managed PostgreSQL; SQLite remains the local-development default.
 - Migration: run `python -m alembic upgrade head` once as a release step before activation.
+- Provider migration wiring: Railway uses its [Pre-Deploy Command](https://docs.railway.com/deployments/pre-deploy-command), Render uses `preDeployCommand` in its [deploy lifecycle](https://render.com/docs/deploys), and Fly MPG/application release commands require explicit owner configuration. None is configured in this repository.
 - Reports: persistent run and report metadata; PDF bytes regenerated on request; no durable PDF blob archive.
 - Anonymous state: process-local and ephemeral; do not scale beyond one replica.
 - Rate limiting: process-local; distributed coordination is future work.

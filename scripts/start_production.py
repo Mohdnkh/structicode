@@ -25,6 +25,14 @@ def main() -> None:
     # application root so the backend namespace package is importable in the
     # production image as well as from a checkout.
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from scripts.production_preflight import validate_environment
+
+    errors = validate_environment(os.environ)
+    if errors:
+        for error in errors:
+            print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(1)
+
     # P12 deliberately uses one worker because anonymous runs and rate limits are
     # process-local until a distributed state architecture is implemented.
     uvicorn.run(

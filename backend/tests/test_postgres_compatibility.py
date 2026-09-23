@@ -66,7 +66,15 @@ def test_postgres_auth_project_persistence_report_tenant_isolation_and_versionin
     })
     assert alpha.status_code == 201 and beta.status_code == 201
     alpha_body, beta_body = alpha.json(), beta.json()
-    alpha_headers, beta_headers = _headers(alpha_body), _headers(beta_body)
+
+    alpha_login = client.post("/api/v1/auth/login", json={
+        "email": alpha_body["user"]["email"], "password": "P12-postgres-password!",
+    })
+    beta_login = client.post("/api/v1/auth/login", json={
+        "email": beta_body["user"]["email"], "password": "P12-postgres-password!",
+    })
+    assert alpha_login.status_code == 200 and beta_login.status_code == 200
+    alpha_headers, beta_headers = _headers(alpha_login.json()), _headers(beta_login.json())
 
     organizations = client.get("/api/v1/organizations", headers=alpha_headers)
     assert organizations.status_code == 200
@@ -76,6 +84,14 @@ def test_postgres_auth_project_persistence_report_tenant_isolation_and_versionin
     })
     assert project.status_code == 201
     project_id = project.json()["id"]
+
+    assert client.get(f"/api/v1/projects/{project_id}", headers=alpha_headers).status_code == 200
+    assert client.get(f"/api/v1/projects/{project_id}", headers=beta_headers).status_code == 404
+    foreign_update = client.patch(
+        f"/api/v1/projects/{project_id}", headers=beta_headers,
+        json={"name": "must-not-mutate", "expected_version": 1},
+    )
+    assert foreign_update.status_code == 404
 
     updated = client.patch(
         f"/api/v1/projects/{project_id}", headers=alpha_headers,

@@ -9,7 +9,7 @@ This runbook is procedural only. It was not executed in P12.
 5. Configure provider backups, retention, and restore policy.
 6. Configure production secrets and environment variables from `PRODUCTION_ENVIRONMENT.md`.
 7. Configure the exact HTTPS domain and provider TLS termination.
-8. Run `python -m alembic upgrade head` once against the release database.
+8. Configure the provider's migration lifecycle (Railway [Pre-Deploy Command](https://docs.railway.com/deployments/pre-deploy-command), Render [`preDeployCommand`](https://render.com/docs/deploys), or an explicitly reviewed Fly release command), then run `python -m alembic upgrade head` once against the release database. No provider wiring is configured by P12.
 9. Build and deploy the immutable container artifact with one replica and one worker.
 10. Verify `/health`, `/ready`, `/`, `/api/v1/capabilities`, and the smoke plan.
 11. Verify project persistence, protected reports, tenant isolation, and Arabic/RTL behavior.

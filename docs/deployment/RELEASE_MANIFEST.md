@@ -3,8 +3,9 @@
 | Field | P12 proposal |
 | --- | --- |
 | Proposed release identifier | `p12-444e453c` |
-| Source Git commit | `ceefb11a91fc64ab2c55ed9dd9dfb8dab4105918` (main base) |
-| P12 commit SHA | 444e453ce0fdce6c380192187596f3e45fade532 |
+| Main base SHA | `ceefb11a91fc64ab2c55ed9dd9dfb8dab4105918` |
+| Release-package implementation SHA | `444e453ce0fdce6c380192187596f3e45fade532` |
+| Previous final review head | `8cb40682850334122329c2a5772b005930670104` |
 | Python runtime | Python 3.12 |
 | Node build runtime | Node.js 20 in the container build stage |
 | Database migration head | `20260922_p9_initial` |

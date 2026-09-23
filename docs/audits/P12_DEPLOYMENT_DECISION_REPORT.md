@@ -73,3 +73,15 @@ No provider CLI, cloud API, project, database, bucket, domain, secret, registry 
 - Container package: `docker build --tag structicode:p12-local .` passed. A temporary local container smoke test returned HTTP 200 for `/health`, `/`, and `/api/v1/capabilities`; it was stopped and removed.
 
 These local checks demonstrate package behavior only. They do not resolve the dependency advisories, provider ownership, production database backup, or restore-drill blockers that keep the release decision at `NO-GO`.
+
+## P12 targeted rework evidence
+
+- Production startup now imports and reuses `validate_environment()` before invoking Uvicorn. Any validation error is printed without credentials and exits with status 1.
+- Focused package suite: `21 passed` in `backend/tests/test_p12_release_package.py`, covering valid and invalid launcher configuration, exact CORS origin shapes, PostgreSQL URL shape, readiness, and temporary PDF behavior.
+- PostgreSQL compatibility: `1 passed` against a temporary PostgreSQL 16 database. The test now performs registration, login for Alpha and Beta, Alpha owner read/update, foreign project GET/PATCH denial, optimistic version conflict, persisted analysis, run retrieval, report generation, and foreign run/report denial.
+- Local container invalid configuration smoke exited with status 1 and did not serve `/health`.
+- Local container valid configuration smoke used PostgreSQL 16, applied Alembic migrations once, and returned HTTP 200 for `/health`, `/ready`, `/`, and `/api/v1/capabilities` through the image's default CMD.
+- Hosted CI container job now includes PostgreSQL 16, invalid-config termination, migration execution, valid-config startup, and health/readiness/frontend/capabilities requests.
+- Provider comparison now distinguishes Railway's documented unmanaged PostgreSQL templates from Render Postgres and Fly.io Managed Postgres. Railway Pre-Deploy Command, Render deploy/pre-deploy lifecycle, and Fly MPG official sources are linked.
+- Release manifest identity now labels the main base, release-package implementation SHA, and previous final review head separately.
+- Dependency audits were rerun on 2026-09-23: runtime `pip_audit` found 16 vulnerabilities in 7 packages; development `pip_audit` found 17 in 8 packages; `npm audit --omit=dev` found 2 moderate vulnerabilities; full `npm audit` found 4 vulnerabilities (1 high, 3 moderate). No advisory was owner-accepted.

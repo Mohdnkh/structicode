@@ -98,6 +98,29 @@ jobs:
   container-build:
     name: Production container package
     runs-on: ubuntu-latest
+    env:
+      STRUCTICODE_DATABASE_URL: postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/structicode
+      STRUCTICODE_AUTH_SECRET: ci-container-secret-do-not-use-in-production-32
+      STRUCTICODE_RUNTIME_MODE: production
+      STRUCTICODE_CORS_ORIGINS: https://app.example.com
+      STRUCTICODE_MAX_REQUEST_BYTES: "1048576"
+      STRUCTICODE_RATE_LIMIT_WINDOW_SECONDS: "60"
+      STRUCTICODE_RATE_LIMIT_AUTH: "60"
+      STRUCTICODE_RATE_LIMIT_ANALYSIS: "1000"
+      PORT: "8000"
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: structicode
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d structicode"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -105,3 +128,32 @@ jobs:
           fetch-depth: 0
       - name: Build production container
         run: docker build --tag structicode:${{ github.sha }} .
+      - name: Reject invalid production configuration
+        run: |
+          if docker run --rm --network host structicode:${{ github.sha }}; then
+            echo "The production image started without required configuration" >&2
+            exit 1
+          fi
+      - name: Apply migrations for container smoke
+        run: docker run --rm --network host -e STRUCTICODE_DATABASE_URL -e STRUCTICODE_AUTH_SECRET structicode:${{ github.sha }} python -m alembic upgrade head
+      - name: Exercise production container command
+        run: |
+          set -euo pipefail
+          docker run -d --rm --network host --name structicode-container-smoke \
+            -e STRUCTICODE_DATABASE_URL -e STRUCTICODE_AUTH_SECRET \
+            -e STRUCTICODE_RUNTIME_MODE -e STRUCTICODE_CORS_ORIGINS \
+            -e STRUCTICODE_MAX_REQUEST_BYTES -e STRUCTICODE_RATE_LIMIT_WINDOW_SECONDS \
+            -e STRUCTICODE_RATE_LIMIT_AUTH -e STRUCTICODE_RATE_LIMIT_ANALYSIS -e PORT \
+            structicode:${{ github.sha }}
+          cleanup() { docker stop structicode-container-smoke >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8000/health
+          curl --fail --silent http://127.0.0.1:8000/ready
+          curl --fail --silent http://127.0.0.1:8000/
+          curl --fail --silent http://127.0.0.1:8000/api/v1/capabilities >/dev/null
